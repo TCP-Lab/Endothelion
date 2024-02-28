@@ -23,8 +23,9 @@ gois_file <- "ICT_set.csv"
 
 # Count Data -------------------------------------------------------------------
 
-# Metric
+# Set metric and default expression threshold
 count_type <- "TPM"
+thr <- 1
 
 # Load and heading check
 file.path(local_path, count_file) |> read.delim() -> ncounts
@@ -100,7 +101,7 @@ for (i in 1:sub_pops) {
 lines(gmm$x, rowSums(gmm$components), col = "firebrick2")
 #rug(only_counts[,1])
 
-# Set the threshold as the right-most decision boundary
+# Set the new expression threshold as the right-most decision boundary
 thr <- gmm$boundary[sub_pops*(sub_pops-1)/2]
 y_lim <- par("yaxp")[2]
 lines(c(thr, thr), c(0, 1.5*y_lim), col = "darkslategray", lty = "dashed")
@@ -175,7 +176,7 @@ gg_bars <- gg_frame +
 
 # Add the Expression Threshold
 gg_thr <- gg_bars +
-  geom_hline(yintercept = 1,
+  geom_hline(yintercept = thr,
              linetype = "dashed",
              color = line_color,
              linewidth = 1)
