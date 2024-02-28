@@ -70,26 +70,55 @@ if (dnues2(gois_ncounts$SYMBOL)[1] > 0) {
 #DEGs <- DEGs[order(DEGs$adj_pval), ] ## from GOZER; to be adapted
 #DEGs <- DEGs[!duplicated(DEGs$GeneSymbol), ]
 
+# Threshold --------------------------------------------------------------------
+
+# Subset the numeric columns and take their log2
+only_counts <- log2(ncounts[,-1] + 1)
+
+# Draw box-plots and density curves
+boxplot(only_counts)
+count_density(only_counts,
+              remove_zeros = TRUE,
+              xlim = c(-1,10),
+              titles = c(paste0("Kernel Density Plot\n", GEO_id), ""),
+              col = "gray20")
+
+# Find the expression threshold adaptively
+# Sub-populations to model
+sub_pops <- 3
+# Filter the dataset keeping only those genes that are detected in the majority
+# of the samples, compute their average expression, then use that distribution
+# of mean log-counts to fit the GMM.
+gmm <- GMM_divide(
+  rowMeans(only_counts)[rowSums(only_counts > 0) > sample_size/2],
+  G = sub_pops)
+
+# Plot the GMM
+for (i in 1:sub_pops) {
+  lines(gmm$x, gmm$components[,i], col = "dodgerblue")
+}
+lines(gmm$x, rowSums(gmm$components), col = "firebrick2")
+#rug(only_counts[,1])
+
+# Set the threshold as the right-most decision boundary
+thr <- gmm$boundary[sub_pops*(sub_pops-1)/2]
+y_lim <- par("yaxp")[2]
+lines(c(thr, thr), c(0, 1.5*y_lim), col = "darkslategray", lty = "dashed")
+original_adj <- par("adj") # Store the original value of 'adj'
+par(adj = 0) # Set text justification to left
+text(x = thr + 0.3, y = 0.8*y_lim,
+     labels = paste("Decision Boundary = ", round(thr, digits = 2)),
+     cex = 1.1)
+par(adj = original_adj) # Restore the original 'adj' value
+
+# Save Plot
+dev.print(device = png, filename = paste0(GEO_id, "_threshold.png"),
+          width = 1200, height = 600)
+
 # Statistics -------------------------------------------------------------------
 
 # Log-transform
 gois_ncounts[,-1] <- log2(gois_ncounts[,-1] + 1)
-
-# find the expression threshold adaptively
-#boxplot(ncounts)
-#count_density(ncounts, remove_zeros = F, ylim = c(0,0.1))
-#count_density(ncounts)
-
-#gmm <- GMM_divide(ncounts[ncounts[,1] != 0, 1], G = 3)
-#for (i in 1:gmm$fit$G) {
-#  lines(gmm$x, gmm$components[,i], col = "blue")
-#}
-#lines(gmm$x, rowSums(gmm$components), col = "red")
-# rug(raw_data)
-
-#y_lim <- par("yaxp")[2]
-#lines(c(gmm$boundary[1], gmm$boundary[1]), c(0, 1.5*y_lim))
-
 
 # Compute descriptive statistics (mean, SD, SEM)
 average_ncounts <- rowMeans(gois_ncounts[,-1], na.rm = TRUE)
