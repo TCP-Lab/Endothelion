@@ -14,6 +14,7 @@ library(r4tcpl)
 # Dirs & Bases -----------------------------------------------------------------
 
 local_path <- "E:/UniTo Drive/WORKS/0010 - Ongoing/Endothelion"
+local_path <- "D:/UniTo Drive/WORKS/0010 - Ongoing/Endothelion"
 
 count_file <- "Lines/hCMEC D3/GSE76528_TPM.tsv"
 
@@ -76,13 +77,11 @@ if (dnues2(gois_ncounts$SYMBOL)[1] > 0) {
 # Subset the numeric columns and take their log2
 only_counts <- log2(ncounts[,-1] + 1)
 
-# Draw box-plots and density curves
-boxplot(only_counts)
-count_density(only_counts,
-              remove_zeros = TRUE,
-              xlim = c(-1,10),
-              titles = c(paste0("Kernel Density Plot\n", GEO_id), ""),
-              col = "gray20")
+# Make box-plots of count distributions
+savePlots(
+  \(){boxplot(only_counts)},
+  figure_Name = paste0(GEO_id, "_boxplot"),
+  figure_Folder = local_path)
 
 # Find the expression threshold adaptively
 # Sub-populations to model
@@ -94,27 +93,35 @@ gmm <- GMM_divide(
   rowMeans(only_counts)[rowSums(only_counts > 0) > sample_size/2],
   G = sub_pops)
 
-# Plot the GMM
-for (i in 1:sub_pops) {
-  lines(gmm$x, gmm$components[,i], col = "dodgerblue")
-}
-lines(gmm$x, rowSums(gmm$components), col = "firebrick2")
-#rug(only_counts[,1])
-
 # Set the new expression threshold as the right-most decision boundary
 thr <- gmm$boundary[sub_pops*(sub_pops-1)/2]
-y_lim <- par("yaxp")[2]
-lines(c(thr, thr), c(0, 1.5*y_lim), col = "darkslategray", lty = "dashed")
-original_adj <- par("adj") # Store the original value of 'adj'
-par(adj = 0) # Set text justification to left
-text(x = thr + 0.3, y = 0.8*y_lim,
-     labels = paste("Decision Boundary = ", round(thr, digits = 2)),
-     cex = 1.1)
-par(adj = original_adj) # Restore the original 'adj' value
 
-# Save Plot
-dev.print(device = png, filename = paste0(GEO_id, "_threshold.png"),
-          width = 1200, height = 600)
+# Make density plots with GMM overlaid
+savePlots(
+  \(){
+    # Density curves
+    count_density(only_counts,
+                  remove_zeros = TRUE,
+                  xlim = c(-1,10),
+                  titles = c(paste0("Kernel Density Plot\n", GEO_id), ""),
+                  col = "gray20")
+    # Plot the GMM
+    for (i in 1:sub_pops) {
+      lines(gmm$x, gmm$components[,i], col = "dodgerblue")
+    }
+    lines(gmm$x, rowSums(gmm$components), col = "firebrick2")
+    # Plot the expression threshold
+    y_lim <- par("yaxp")[2]
+    lines(c(thr, thr), c(0, 1.5*y_lim), col = "darkslategray", lty = "dashed")
+    original_adj <- par("adj") # Store the original value of 'adj'
+    par(adj = 0) # Set text justification to left
+    text(x = thr + 0.3, y = 0.8*y_lim,
+         labels = paste("Decision Boundary = ", round(thr, digits = 2)),
+         cex = 1.1)
+    par(adj = original_adj) # Restore the original 'adj' value
+  },
+  figure_Name = paste0(GEO_id, "_threshold"),
+  figure_Folder = local_path)
 
 # Statistics -------------------------------------------------------------------
 
