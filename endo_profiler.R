@@ -81,7 +81,8 @@ only_counts <- log2(ncounts[,-1] + 1)
 savePlots(
   \(){boxplot(only_counts)},
   figure_Name = paste0(GEO_id, "_boxplot"),
-  figure_Folder = local_path)
+  figure_Folder = local_path,
+  pdf_out = FALSE)
 
 # Find the expression threshold adaptively
 # Sub-populations to model
@@ -116,7 +117,7 @@ savePlots(
     original_adj <- par("adj") # Store the original value of 'adj'
     par(adj = 0) # Set text justification to left
     text(x = thr + 0.3, y = 0.8*y_lim,
-         labels = paste("Decision Boundary = ", round(thr, digits = 2)),
+         labels = paste("Decision Boundary =", round(thr, digits = 2)),
          cex = 1.1)
     par(adj = original_adj) # Restore the original 'adj' value
   },
@@ -168,7 +169,7 @@ gg_frame <-
 
 # Draw the Bars
 gg_bars <- gg_frame +
-  geom_bar(stat = "identity") +
+  geom_bar(stat = "identity", width = 0.75) +
   geom_errorbar(aes(ymin = Mean - Std_Dev,
                     ymax = Mean + Std_Dev),
                 linewidth = 1.0, width = 0.5, color = err_color)
@@ -188,10 +189,10 @@ gg_thr <- gg_bars +
              color = line_color,
              linewidth = 1)
 
-# Print the Chart
-print(gg_thr)
-
-# Save Plot
-dev.print(device = png, filename = paste0(GEO_id, "_", count_type, ".png"),
-          width = 2000, height = 984)
+# Save the Chart
+savePlots(
+  \(){print(gg_thr)},
+  width_px = 2000,
+  figure_Name = paste0(GEO_id, "_", count_type, "_chart"),
+  figure_Folder = local_path)
 
