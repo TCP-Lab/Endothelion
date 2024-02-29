@@ -45,33 +45,6 @@ if (count_type == "TPM" && any(abs(colSums(ncounts[,-1]) - 1e6) > 5)) {
   stop("ERROR: Bad TPM normalization...Stop executing.")
 }
 
-# Gene Set ---------------------------------------------------------------------
-
-# Load
-file.path(local_path, gois_file) |> read.delim(header = F) |> unlist() -> gois
-
-# NOTE
-# Use 'r4tcpl::TGS' dataset to access the full transportome, or a subset of it
-# E.g., gois <- r4tcpl::TGS$ICs
-
-# Intersection -----------------------------------------------------------------
-
-# Row subsetting
-gois_ncounts <- subset(ncounts, SYMBOL %in% gois)
-
-if (setdiff(gois, ncounts$SYMBOL) |> length() > 0) {
-  cat("WARNING:\n Can't find these Genes of Interest in Count Matrix:",
-      setdiff(gois, ncounts$SYMBOL), sep = "\n  ")
-}
-
-if (dnues2(gois_ncounts$SYMBOL)[1] > 0) {
-  stop("ERROR: Cannot handle duplicated gene symbols...")
-}
-
-# Possibly collapse duplicated Gene Symbols (keeping the most expressed)
-#DEGs <- DEGs[order(DEGs$adj_pval), ] ## from GOZER; to be adapted
-#DEGs <- DEGs[!duplicated(DEGs$GeneSymbol), ]
-
 # Threshold --------------------------------------------------------------------
 
 # Subset the numeric columns and take their log2
@@ -123,6 +96,33 @@ savePlots(
   },
   figure_Name = paste0(GEO_id, "_threshold"),
   figure_Folder = local_path)
+
+# Gene Set ---------------------------------------------------------------------
+
+# Load
+file.path(local_path, gois_file) |> read.delim(header = F) |> unlist() -> gois
+
+# NOTE
+# Use 'r4tcpl::TGS' dataset to access the full transportome, or a subset of it
+# E.g., gois <- r4tcpl::TGS$ICs
+
+# Intersection -----------------------------------------------------------------
+
+# Row subsetting
+gois_ncounts <- subset(ncounts, SYMBOL %in% gois)
+
+if (setdiff(gois, ncounts$SYMBOL) |> length() > 0) {
+  cat("WARNING:\n Can't find these Genes of Interest in Count Matrix:",
+      setdiff(gois, ncounts$SYMBOL), sep = "\n  ")
+}
+
+if (dnues2(gois_ncounts$SYMBOL)[1] > 0) {
+  stop("ERROR: Cannot handle duplicated gene symbols...")
+}
+
+# Possibly collapse duplicated Gene Symbols (keeping the most expressed)
+#DEGs <- DEGs[order(DEGs$adj_pval), ] ## from GOZER; to be adapted
+#DEGs <- DEGs[!duplicated(DEGs$GeneSymbol), ]
 
 # Statistics -------------------------------------------------------------------
 
