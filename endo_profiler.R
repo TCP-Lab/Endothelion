@@ -11,25 +11,60 @@
 library(ggplot2)
 library(r4tcpl)
 
+# Input Loading-----------------------------------------------------------------
+
+# Check if the correct number of arguments is provided from command-line.
+if (length(commandArgs(trailingOnly = TRUE)) != 4) {
+  cat("Usage: Rscript endo_profiler.R <count_matrix> <count_type> <threshold> <GOIs>\n")
+  quit(status = 1)
+}
+
+# Extract command-line arguments.
+count_file <- commandArgs(trailingOnly = TRUE)[1]
+count_type <- commandArgs(trailingOnly = TRUE)[2]
+threshold <- commandArgs(trailingOnly = TRUE)[3]
+gois_file <- commandArgs(trailingOnly = TRUE)[4]
+
+# Check if the target file exists.
+if (! file.exists(count_file)) {
+ cat("File", count_file, "does not exist.\n")
+ quit(status = 2)
+}
+
+# Check the metrics
+if (! count_type %in% c("expected_count", "TPM", "FPKM")) {
+  cat("Unknown metrics", count_type, "\n")
+  quit(status = 3)
+}
+
+# Check the threshold
+if (! threshold %in% c("true", "false")) {
+  cat("Invalid \'threshold\' parameter", threshold, ".\n",
+      "It must be one of the two Bash logical values true or false.\n")
+  quit(status = 4)
+}
+
+# Check if the list of the Genes of Interest (GOIs) exists.
+if (! file.exists(gois_file)) {
+  cat("File", gois_file, "does not exist.\n")
+  quit(status = 5)
+}
+
 # Dirs & Bases -----------------------------------------------------------------
 
-local_path <- "E:/UniTo Drive/WORKS/0010 - Ongoing/Endothelion"
-local_path <- "D:/UniTo Drive/WORKS/0010 - Ongoing/Endothelion"
+# Set the output folder
+count_file |> dirname() |> file.path("Results") -> out_dir
+if (! dir.exists(out_dir)) {
+  dir.create(out_dir, recursive = TRUE)
+}
 
-count_file <- "Lines/hCMEC D3/GSE76528_TPM.tsv"
-
+# Retrieve the GEO ID from input file name
 count_file |> basename2() |> {\(x)strsplit(x,"_")[[1]][1]}() -> GEO_id
-
-gois_file <- "ICT_set.csv"
 
 # Count Data -------------------------------------------------------------------
 
-# Set metric and default expression threshold
-count_type <- "TPM"
-thr <- 1
-
 # Load and heading check
-file.path(local_path, count_file) |> read.delim() -> ncounts
+count_file |> read.delim() -> ncounts
 if (!("gene_id" %in% colnames(ncounts) && "SYMBOL" %in% colnames(ncounts))) {
   stop("ERROR: Bad formatted count table... Stop executing.")
 }
@@ -47,60 +82,66 @@ if (count_type == "TPM" && any(abs(colSums(ncounts[,-1]) - 1e6) > 5)) {
 
 # Threshold --------------------------------------------------------------------
 
-# Subset the numeric columns and take their log2
-only_counts <- log2(ncounts[,-1] + 1)
+# Default expression threshold
+thr <- 1
 
-# Make box-plots of count distributions
-savePlots(
-  \(){boxplot(only_counts)},
-  figure_Name = paste0(GEO_id, "_boxplot"),
-  figure_Folder = local_path,
-  pdf_out = FALSE)
-
-# Find the expression threshold adaptively
-# Sub-populations to model
-sub_pops <- 3
-# Filter the dataset keeping only those genes that are detected in the majority
-# of the samples, compute their average expression, then use that distribution
-# of mean log-counts to fit the GMM.
-gmm <- GMM_divide(
-  rowMeans(only_counts)[rowSums(only_counts > 0) > sample_size/2],
-  G = sub_pops)
-
-# Set the new expression threshold as the right-most decision boundary
-thr <- gmm$boundary[sub_pops*(sub_pops-1)/2]
-
-# Make density plots with GMM overlaid
-savePlots(
-  \(){
-    # Density curves
-    count_density(only_counts,
-                  remove_zeros = TRUE,
-                  xlim = c(-1,10),
-                  titles = c(paste0("Kernel Density Plot\n", GEO_id), ""),
-                  col = "gray20")
-    # Plot the GMM
-    for (i in 1:sub_pops) {
-      lines(gmm$x, gmm$components[,i], col = "dodgerblue")
-    }
-    lines(gmm$x, rowSums(gmm$components), col = "firebrick2")
-    # Plot the expression threshold
-    y_lim <- par("yaxp")[2]
-    lines(c(thr, thr), c(0, 1.5*y_lim), col = "darkslategray", lty = "dashed")
-    original_adj <- par("adj") # Store the original value of 'adj'
-    par(adj = 0) # Set text justification to left
-    text(x = thr + 0.3, y = 0.8*y_lim,
-         labels = paste("Decision Boundary =", round(thr, digits = 2)),
-         cex = 1.1)
-    par(adj = original_adj) # Restore the original 'adj' value
-  },
-  figure_Name = paste0(GEO_id, "_threshold"),
-  figure_Folder = local_path)
+# Adaptive expression threshold
+if (threshold == "true") {
+  # Subset the numeric columns and take their log2
+  only_counts <- log2(ncounts[,-1] + 1)
+  
+  # Make box-plots of count distributions
+  savePlots(
+    \(){boxplot(only_counts)},
+    figure_Name = paste0(GEO_id, "_boxplot"),
+    figure_Folder = out_dir,
+    pdf_out = FALSE)
+  
+  # Find the expression threshold adaptively
+  # Sub-populations to model
+  sub_pops <- 3
+  # Filter the dataset keeping only those genes that are detected in the majority
+  # of the samples, compute their average expression, then use that distribution
+  # of mean log-counts to fit the GMM.
+  gmm <- GMM_divide(
+    rowMeans(only_counts)[rowSums(only_counts > 0) > sample_size/2],
+    G = sub_pops)
+  
+  # Set the new expression threshold as the right-most decision boundary
+  thr <- gmm$boundary[sub_pops*(sub_pops-1)/2]
+  
+  # Make density plots with GMM overlaid
+  savePlots(
+    \(){
+      # Density curves
+      count_density(only_counts,
+                    remove_zeros = TRUE,
+                    xlim = c(-1,10),
+                    titles = c(paste0("Kernel Density Plot\n", GEO_id), ""),
+                    col = "gray20")
+      # Plot the GMM
+      for (i in 1:sub_pops) {
+        lines(gmm$x, gmm$components[,i], col = "dodgerblue")
+      }
+      lines(gmm$x, rowSums(gmm$components), col = "firebrick2")
+      # Plot the expression threshold
+      y_lim <- par("yaxp")[2]
+      lines(c(thr, thr), c(0, 1.5*y_lim), col = "darkslategray", lty = "dashed")
+      original_adj <- par("adj") # Store the original value of 'adj'
+      par(adj = 0) # Set text justification to left
+      text(x = thr + 0.3, y = 0.8*y_lim,
+           labels = paste("Decision Boundary =", round(thr, digits = 2)),
+           cex = 1.1)
+      par(adj = original_adj) # Restore the original 'adj' value
+    },
+    figure_Name = paste0(GEO_id, "_threshold"),
+    figure_Folder = out_dir)
+}
 
 # Gene Set ---------------------------------------------------------------------
 
 # Load
-file.path(local_path, gois_file) |> read.delim(header = F) |> unlist() -> gois
+gois_file |> read.delim(header = F) |> unlist() -> gois
 
 # NOTE
 # Use 'r4tcpl::TGS' dataset to access the full transportome, or a subset of it
@@ -194,5 +235,8 @@ savePlots(
   \(){print(gg_thr)},
   width_px = 2000,
   figure_Name = paste0(GEO_id, "_", count_type, "_chart"),
-  figure_Folder = local_path)
+  figure_Folder = out_dir)
 
+# END --------------------------------------------------------------------------
+
+cat("DONE!\n")
