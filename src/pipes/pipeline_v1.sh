@@ -1,7 +1,10 @@
 #!/bin/bash
 
 # ==============================================================================
-#?  The Endothelion Pipeline
+#? The Endothelion Pipeline
+#?
+#? Add the long description here as a multi-line comment.
+#? It also supports some *markdown*!
 # ==============================================================================
 
 # --- General settings and variables -------------------------------------------
@@ -9,16 +12,19 @@
 set -e # "exit-on-error" shell option
 set -u # "no-unset" shell option
 
-in_path="./data/in"
-count_type="TPM"
-threshold=true
-GOIs="${in_path}/ICT_set.csv"
-
 # For a friendlier use of colors in Bash
 red=$'\e[1;31m'
 grn=$'\e[1;32m'
 yel=$'\e[1;33m'
 end=$'\e[0m'
+
+# Runtime option file
+OPTS="./data/in/runtime_options.json"
+# Set variables
+in_path="$(cat $OPTS | jq -r ".in_path")"
+count_type="$(cat $OPTS | jq -r ".count_type")"
+threshold="$(cat $OPTS | jq -r ".threshold")"
+GOIs="$(cat $OPTS | jq -r ".GOIs")"
 
 # --- The pipeline starts here -------------------------------------------------
 
