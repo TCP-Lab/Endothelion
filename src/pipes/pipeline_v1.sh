@@ -46,7 +46,8 @@ do
 		"$count_matrix" \
 		"$count_type" \
 		"$threshold" \
-		"$GOIs"
+		"$GOIs" \
+		"./data/out/$(dirname "${count_matrix#${in_path}}")"
 	echo
 	((counter++))
 done

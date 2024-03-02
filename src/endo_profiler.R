@@ -14,8 +14,8 @@ library(r4tcpl)
 # Input Loading-----------------------------------------------------------------
 
 # Check if the correct number of arguments is provided from command-line.
-if (length(commandArgs(trailingOnly = TRUE)) != 4) {
-  cat("Usage: Rscript endo_profiler.R <count_matrix> <count_type> <threshold> <GOIs>\n")
+if (length(commandArgs(trailingOnly = TRUE)) != 5) {
+  cat("Usage: Rscript endo_profiler.R <count_matrix> <count_type> <threshold> <GOIs> <out_dir>\n")
   quit(status = 1)
 }
 
@@ -24,6 +24,7 @@ count_file <- commandArgs(trailingOnly = TRUE)[1]
 count_type <- commandArgs(trailingOnly = TRUE)[2]
 threshold <- commandArgs(trailingOnly = TRUE)[3]
 gois_file <- commandArgs(trailingOnly = TRUE)[4]
+out_dir <- commandArgs(trailingOnly = TRUE)[5]
 
 # Check if the target file exists.
 if (! file.exists(count_file)) {
@@ -53,7 +54,6 @@ if (! file.exists(gois_file)) {
 # Dirs & Bases -----------------------------------------------------------------
 
 # Set the output folder
-count_file |> dirname() |> file.path("Results") -> out_dir
 if (! dir.exists(out_dir)) {
   dir.create(out_dir, recursive = TRUE)
 }

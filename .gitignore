@@ -1,5 +1,10 @@
-# Sublime Text files
+# Local data folders
+/data/out/
+
+# Sublime Text project files
 *.sublime-*
+
+# --- R ----------------------------------------
 
 # History files
 .Rhistory
