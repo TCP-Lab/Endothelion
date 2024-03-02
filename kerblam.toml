@@ -1,2 +1,5 @@
 [meta]
 version = "1.0.0-rc.1"
+
+[data.profiles.test]
+"runtime_options.json" = "runtime_options_test.json"

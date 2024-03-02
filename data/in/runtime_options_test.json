@@ -1,0 +1,6 @@
+{
+    "in_path": "./data/in/Tissues/Microvessels/Liver",
+    "count_type": "TPM",
+    "threshold": true,
+    "GOIs": "./data/in/ICT_set.csv"
+}
