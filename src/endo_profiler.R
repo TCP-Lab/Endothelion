@@ -13,9 +13,14 @@ library(r4tcpl)
 
 # Input Loading-----------------------------------------------------------------
 
+# General error message
+error_msg <- "\nERROR by endo_profiler.R\n"
+
 # Check if the correct number of arguments is provided from command-line.
 if (length(commandArgs(trailingOnly = TRUE)) != 5) {
-  cat("Usage: Rscript endo_profiler.R <count_matrix> <count_type> <threshold> <GOIs> <out_dir>\n")
+  cat(error_msg,
+      "One or more arguments are missing. Usage:\n",
+      "Rscript endo_profiler.R <count_matrix> <count_type> <threshold> <GOIs> <out_dir>\n")
   quit(status = 1)
 }
 
@@ -28,26 +33,30 @@ out_dir <- commandArgs(trailingOnly = TRUE)[5]
 
 # Check if the target file exists.
 if (! file.exists(count_file)) {
- cat("File", count_file, "does not exist.\n")
+ cat(error_msg,
+     " File \'", count_file, "\' does not exist.\n", sep = "")
  quit(status = 2)
 }
 
 # Check the metrics
 if (! count_type %in% c("expected_count", "TPM", "FPKM")) {
-  cat("Unknown metrics", count_type, "\n")
+  cat(error_msg,
+      " Unknown metric \'", count_type, "\'\n", sep = "")
   quit(status = 3)
 }
 
 # Check the threshold
 if (! threshold %in% c("true", "false")) {
-  cat("Invalid \'threshold\' parameter", threshold, ".\n",
-      "It must be one of the two Bash logical values true or false.\n")
+  cat(error_msg,
+      " Invalid threshold parameter \'", threshold, "\'.\n",
+      " It must be one of the two Bash logical values true or false.\n", sep = "")
   quit(status = 4)
 }
 
 # Check if the list of the Genes of Interest (GOIs) exists.
 if (! file.exists(gois_file)) {
-  cat("File", gois_file, "does not exist.\n")
+  cat(error_msg,
+      " File \'", gois_file, "\' does not exist.\n", sep = "")
   quit(status = 5)
 }
 
