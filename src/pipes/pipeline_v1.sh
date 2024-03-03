@@ -37,8 +37,7 @@ echo -e "\nFound ${files_found} TSV files to analyze.\n"
 OIFS="$IFS"
 IFS=$'\n'
 counter=1
-for count_matrix in `find "${in_path}" -maxdepth 4 \
-	-type f -iname "*.tsv" | sort`
+for count_matrix in `find "${in_path}" -maxdepth 4 -type f -iname "*.tsv"`
 do
 	echo "----------------------------------------------------"
 	echo "${yel}Analyzing file ${counter}/${files_found}:${end} ${count_matrix}"

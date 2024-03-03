@@ -162,7 +162,7 @@ gois_file |> read.delim(header = F) |> unlist() -> gois
 gois_ncounts <- subset(ncounts, SYMBOL %in% gois)
 
 if (setdiff(gois, ncounts$SYMBOL) |> length() > 0) {
-  cat("WARNING:\n Can't find these Genes of Interest in Count Matrix:",
+  cat("\nWARNING:\n Can't find these Genes of Interest in the Count Matrix:",
       setdiff(gois, ncounts$SYMBOL), sep = "\n  ")
 }
 
@@ -193,7 +193,7 @@ gois_expression <- data.frame(Symbol = gois_ncounts$SYMBOL,
 # Saving as CSV
 write.csv(gois_expression,
           file.path(out_dir,
-                    paste0(GEO_id, "_", count_type, "_profileReport.csv")))
+                    paste0(GEO_id, "_log2", count_type, "_profileReport.csv")))
 
 # Bar Chart --------------------------------------------------------------------
 
@@ -248,9 +248,9 @@ gg_thr <- gg_bars +
 savePlots(
   \(){print(gg_thr)},
   width_px = 2000,
-  figure_Name = paste0(GEO_id, "_", count_type, "_chart"),
+  figure_Name = paste0(GEO_id, "_log2", count_type, "_chart"),
   figure_Folder = out_dir)
 
 # END --------------------------------------------------------------------------
 
-cat("DONE!\n")
+cat("\n", GEO_id, " is done!\n", sep = "")
