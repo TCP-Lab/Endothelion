@@ -16,22 +16,25 @@ library(r4tcpl)
 # General error message
 error_msg <- "\nERROR by endo_profiler.R\n"
 
-# Check if the correct number of arguments is provided from command-line.
-if (length(commandArgs(trailingOnly = TRUE)) != 5) {
+# Check if the correct number of arguments is provided from command-line
+if (length(commandArgs(trailingOnly = TRUE)) != 6) {
   cat(error_msg,
       "One or more arguments are missing. Usage:\n",
-      "Rscript endo_profiler.R <count_matrix> <count_type> <threshold> <GOIs> <out_dir>\n")
+      "Rscript endo_profiler.R <count_matrix> <count_type>\n",
+      "                        <threshold_adapt> <threshold_value>\n",
+      "                        <GOIs> <out_dir>\n")
   quit(status = 1)
 }
 
 # Extract command-line arguments.
 count_file <- commandArgs(trailingOnly = TRUE)[1]
 count_type <- commandArgs(trailingOnly = TRUE)[2]
-threshold <- commandArgs(trailingOnly = TRUE)[3]
-gois_file <- commandArgs(trailingOnly = TRUE)[4]
-out_dir <- commandArgs(trailingOnly = TRUE)[5]
+threshold_adapt <- commandArgs(trailingOnly = TRUE)[3]
+threshold_value <- as.numeric(commandArgs(trailingOnly = TRUE)[4])
+gois_file <- commandArgs(trailingOnly = TRUE)[5]
+out_dir <- commandArgs(trailingOnly = TRUE)[6]
 
-# Check if the target file exists.
+# Check if the target file exists
 if (! file.exists(count_file)) {
  cat(error_msg,
      " File \'", count_file, "\' does not exist.\n", sep = "")
@@ -45,19 +48,27 @@ if (! count_type %in% c("expected_count", "TPM", "FPKM")) {
   quit(status = 3)
 }
 
-# Check the threshold
-if (! threshold %in% c("true", "false")) {
+# Check if the threshold should be adaptive
+if (! threshold_adapt %in% c("true", "false")) {
   cat(error_msg,
-      " Invalid threshold parameter \'", threshold, "\'.\n",
+      " Invalid \'threshold_adapt\' parameter \'", threshold_adapt, "\'.\n",
       " It must be one of the two Bash logical values true or false.\n", sep = "")
   quit(status = 4)
+}
+
+# Check threshold_value input type
+if (is.na(threshold_value)) {
+  cat(error_msg,
+      " Invalid data type for \'threshold_value\' parameter.\n",
+      " A single numeric value is expected here.\n", sep = "")
+  quit(status = 5)
 }
 
 # Check if the list of the Genes of Interest (GOIs) exists.
 if (! file.exists(gois_file)) {
   cat(error_msg,
       " File \'", gois_file, "\' does not exist.\n", sep = "")
-  quit(status = 5)
+  quit(status = 6)
 }
 
 # Dirs & Bases -----------------------------------------------------------------
@@ -95,7 +106,7 @@ if (count_type == "TPM" && any(abs(colSums(ncounts[,-1]) - 1e6) > 5)) {
 thr <- 1
 
 # Adaptive expression threshold
-if (threshold == "true") {
+if (threshold_adapt == "true") {
   # Subset the numeric columns and take their log2
   only_counts <- log2(ncounts[,-1] + 1)
   
@@ -107,17 +118,15 @@ if (threshold == "true") {
     pdf_out = FALSE)
   
   # Find the expression threshold adaptively
-  # Sub-populations to model
-  sub_pops <- 3
   # Filter the dataset keeping only those genes that are detected in the majority
   # of the samples, compute their average expression, then use that distribution
   # of mean log-counts to fit the GMM.
   gmm <- GMM_divide(
     rowMeans(only_counts)[rowSums(only_counts > 0) > sample_size/2],
-    G = sub_pops)
+    G = threshold_value)
   
   # Set the new expression threshold as the right-most decision boundary
-  thr <- gmm$boundary[sub_pops*(sub_pops-1)/2]
+  thr <- gmm$boundary[threshold_value*(threshold_value-1)/2]
   
   # Make density plots with GMM overlaid
   savePlots(
@@ -129,7 +138,7 @@ if (threshold == "true") {
                     titles = c(paste0("Kernel Density Plot\n", GEO_id), ""),
                     col = "gray20")
       # Plot the GMM
-      for (i in 1:sub_pops) {
+      for (i in 1:threshold_value) {
         lines(gmm$x, gmm$components[,i], col = "dodgerblue")
       }
       lines(gmm$x, rowSums(gmm$components), col = "firebrick2")

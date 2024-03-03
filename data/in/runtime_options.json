@@ -1,6 +1,7 @@
 {
     "in_path": "./data/in",
     "count_type": "TPM",
-    "threshold": true,
+    "threshold_adapt": true,
+    "threshold_value": 4,
     "GOIs": "./data/in/ICT_set.csv"
 }

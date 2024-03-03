@@ -23,7 +23,8 @@ OPTS="./data/in/runtime_options.json"
 # Set variables
 in_path="$(cat $OPTS | jq -r ".in_path")"
 count_type="$(cat $OPTS | jq -r ".count_type")"
-threshold="$(cat $OPTS | jq -r ".threshold")"
+threshold_adapt="$(cat $OPTS | jq -r ".threshold_adapt")"
+threshold_value="$(cat $OPTS | jq -r ".threshold_value")"
 GOIs="$(cat $OPTS | jq -r ".GOIs")"
 
 # --- The pipeline starts here -------------------------------------------------
@@ -44,7 +45,8 @@ do
 	Rscript "./src/endo_profiler.R" \
 		"$count_matrix" \
 		"$count_type" \
-		"$threshold" \
+		"$threshold_adapt" \
+		"$threshold_value" \
 		"$GOIs" \
 		"./data/out/$(dirname "${count_matrix#${in_path}}")"
 	echo
