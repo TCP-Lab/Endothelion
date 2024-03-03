@@ -1,10 +1,39 @@
-
-# Counts are assumed to be
-#  - saved in TSV format
-#  - already normalized (ncounts)
-#  - expressed in linear scale
-#  - provided with gene symbol annotation (column 'SYMBOL')
-#  - named according to the pattern <GEOid>_<metrics>_<depth>_<PE/SE>.TSV
+#
+# Endothelion Project
+#
+# Assumptions and format of expected arguments.
+#
+# Count matrices are assumed to be the end product of the sequential application
+# of the different modules from the x.FASTQ framework. In particular, counts are
+# supposed to be
+#  - already normalized (ncounts), the normalization metric being the trailing
+#    part of each sample name used for column heading;
+#  - expressed in linear scale (not yet log-transformed);
+#  - provided with ENSG IDs ('gene_id' column);
+#  - provided with gene symbol annotation ('SYMBOL' column);
+#
+# In addition, the files containing the count matrices are supposed to be
+#  - saved in TSV format;
+#  - named according to the following pattern:
+#
+#       <GEOid>_<metric>_<depth>_<PE/SE>.tsv
+#
+#    E.g., a study with an average depth of 40 megareads per sample, paired-end,
+#
+#       GSE76528_TPM_40_PE.tsv
+#
+# GOIs are assumed to be listed as plain gene symbols, arranged in a single
+# column (CSV or TSV) with no header.
+#
+# When `threshold_adapt == "true"`, a GMM is used to find the expression
+# threshold as the  decision boundary separating the two sub-populations of
+# expressed and unexpressed genes. In this case, the integer entered as the
+# `threshold_value` indicates the number of Gaussian components to be used in
+# the mixture for the adaptive calculation of the expression threshold (thr). If
+# the algorithm returns a thr value less than 1, thr is coerced to 1 by default.
+# In contrast, when `threshold_adapt == "false"`, the `threshold_value` is the
+# real value to be used as constant threshold in all the experiments.
+#
 
 # Packages ---------------------------------------------------------------------
 
@@ -165,7 +194,7 @@ if (threshold_adapt == "true") {
 # Gene Set ---------------------------------------------------------------------
 
 # Load
-gois_file |> read.delim(header = F) |> unlist() -> gois
+gois_file |> read.delim(header = FALSE) |> unlist() -> gois
 
 # NOTE
 # Use 'r4tcpl::TGS' dataset to access the full transportome, or a subset of it
@@ -235,7 +264,7 @@ gg_frame <-
                      breaks = seq(0, y_limit, 0.5)) +
   xlab("Genes of Interest") +
   ylab(substitute(log[2]*(x+1), list(x = count_type))) +
-  ggtitle(label = paste0(GEO_id, " (mn = ", sample_size,")"))
+  ggtitle(label = paste0(GEO_id, " (n = ", sample_size,")"))
 
 # Draw the Bars
 gg_bars <- gg_frame +
