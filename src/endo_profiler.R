@@ -102,9 +102,6 @@ if (count_type == "TPM" && any(abs(colSums(ncounts[,-1]) - 1e6) > 5)) {
 
 # Threshold --------------------------------------------------------------------
 
-# Default expression threshold
-thr <- 1
-
 # Adaptive expression threshold
 if (threshold_adapt == "true") {
   # Subset the numeric columns and take their log2
@@ -160,6 +157,9 @@ if (threshold_adapt == "true") {
         round(thr, digits = 2), "...been coerced to 1.")
     thr <- 1
   }
+} else {
+  # Fixed expression threshold (non-adaptive mode)
+  thr <- threshold_value
 }
 
 # Gene Set ---------------------------------------------------------------------

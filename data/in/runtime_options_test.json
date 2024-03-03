@@ -1,7 +1,7 @@
 {
     "in_path": "./data/in/Tissues/Microvessels/Liver",
     "count_type": "TPM",
-    "threshold_adapt": false,
+    "threshold_adapt": true,
     "threshold_value": 2,
     "GOIs": "./data/in/ICT_set.csv"
 }
