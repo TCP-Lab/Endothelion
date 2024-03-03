@@ -190,6 +190,11 @@ gois_expression <- data.frame(Symbol = gois_ncounts$SYMBOL,
                               Std_Dev = sd_ncounts,
                               SEM = sem_ncounts)
 
+# Saving as CSV
+write.csv(gois_expression,
+          file.path(out_dir,
+                    paste0(GEO_id, "_", count_type, "_profileReport.csv")))
+
 # Bar Chart --------------------------------------------------------------------
 
 # Colors
