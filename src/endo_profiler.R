@@ -19,10 +19,10 @@ error_msg <- "\nERROR by endo_profiler.R\n"
 # Check if the correct number of arguments is provided from command-line
 if (length(commandArgs(trailingOnly = TRUE)) != 6) {
   cat(error_msg,
-      "One or more arguments are missing. Usage:\n",
+      "One or more arguments are missing. Usage:\n\n",
       "Rscript endo_profiler.R <count_matrix> <count_type>\n",
       "                        <threshold_adapt> <threshold_value>\n",
-      "                        <GOIs> <out_dir>\n")
+      "                        <GOIs> <out_dir>\n\n")
   quit(status = 1)
 }
 
@@ -41,7 +41,7 @@ if (! file.exists(count_file)) {
  quit(status = 2)
 }
 
-# Check the metrics
+# Check the metric
 if (! count_type %in% c("expected_count", "TPM", "FPKM")) {
   cat(error_msg,
       " Unknown metric \'", count_type, "\'\n", sep = "")
@@ -154,6 +154,12 @@ if (threshold_adapt == "true") {
     },
     figure_Name = paste0(GEO_id, "_threshold"),
     figure_Folder = out_dir)
+  
+  if (thr < 1) {
+    cat("\nWARNING:\n Adaptive threshold from GMM returned",
+        round(thr, digits = 2), "...been coerced to 1.")
+    thr <- 1
+  }
 }
 
 # Gene Set ---------------------------------------------------------------------
