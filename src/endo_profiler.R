@@ -39,6 +39,7 @@
 
 library(ggplot2)
 library(r4tcpl)
+# library(tidyr)
 
 # Input Loading-----------------------------------------------------------------
 
@@ -49,8 +50,8 @@ error_msg <- "\nERROR by endo_profiler.R\n"
 if (length(commandArgs(trailingOnly = TRUE)) != 6) {
   cat(error_msg,
       "One or more arguments are missing. Usage:\n\n",
-      "Rscript endo_profiler.R <count_matrix> <count_type>\n",
-      "                        <threshold_adapt> <threshold_value>\n",
+      "Rscript endo_profiler.R <count_matrix> <count_type> \\\n",
+      "                        <threshold_adapt> <threshold_value> \\\n",
       "                        <GOIs> <out_dir>\n\n")
   quit(status = 1)
 }
@@ -77,7 +78,7 @@ if (! count_type %in% c("expected_count", "TPM", "FPKM")) {
   quit(status = 3)
 }
 
-# Check if the threshold should be adaptive
+# Check adaptive threshold logical flag
 if (! threshold_adapt %in% c("true", "false")) {
   cat(error_msg,
       " Invalid \'threshold_adapt\' parameter \'", threshold_adapt, "\'.\n",
@@ -121,13 +122,15 @@ if (!("gene_id" %in% colnames(ncounts) && "SYMBOL" %in% colnames(ncounts))) {
 # Subset
 regex <- paste0("^SYMBOL$|_", count_type, "$")
 ncounts <- ncounts[,grep(regex, colnames(ncounts))]
-genome_size <- dim(ncounts)[1]
 sample_size <- dim(ncounts)[2] - 1
 
 # Normalization check: sum(TPMs) == 10^6
 if (count_type == "TPM" && any(abs(colSums(ncounts[,-1]) - 1e6) > 5)) {
   stop("ERROR: Bad TPM normalization...Stop executing.")
 }
+
+# Explode the dataframe (collapsed by cc_assembler.R from x.FASTQ)
+# tidyr::separate_rows(ncounts, SYMBOL, sep = ",") |> as.data.frame() -> ncounts ###########################
 
 # Threshold --------------------------------------------------------------------
 
