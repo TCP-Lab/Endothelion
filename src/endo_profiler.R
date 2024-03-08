@@ -129,9 +129,6 @@ if (count_type == "TPM" && any(abs(colSums(ncounts[,-1]) - 1e6) > 5)) {
   stop("ERROR: Bad TPM normalization...Stop executing.")
 }
 
-# Explode the dataframe (collapsed by cc_assembler.R from x.FASTQ)
-# tidyr::separate_rows(ncounts, SYMBOL, sep = ",") |> as.data.frame() -> ncounts ###########################
-
 # Threshold --------------------------------------------------------------------
 
 # Adaptive expression threshold
@@ -200,17 +197,20 @@ if (threshold_adapt == "true") {
 gois_file |> read.delim(header = FALSE) |> unlist() -> gois
 
 # NOTE
-# Use 'r4tcpl::TGS' dataset to access the full transportome, or a subset of it
-# E.g., gois <- r4tcpl::TGS$ICs
+# Use 'r4tcpl::TGS' dataset to access the full transportome, or a subset of it,
+# e.g.:
+# gois <- r4tcpl::TGS$ICs
 
 # Intersection -----------------------------------------------------------------
 
-# Row subsetting
-gois_ncounts <- subset(ncounts, SYMBOL %in% gois)
+# Explode the dataframe (collapsed by 'cc_assembler.R' from x.FASTQ), then
+# proceed with row subsetting.
+tidyr::separate_rows(ncounts, SYMBOL, sep = ",") |> as.data.frame() |>
+  subset(SYMBOL %in% gois) -> gois_ncounts
 
-if (setdiff(gois, ncounts$SYMBOL) |> length() > 0) {
+if (setdiff(gois, gois_ncounts$SYMBOL) |> length() > 0) {
   cat("\nWARNING:\n Can't find these Genes of Interest in the Count Matrix:",
-      setdiff(gois, ncounts$SYMBOL), sep = "\n  ")
+      setdiff(gois, gois_ncounts$SYMBOL), sep = "\n  ")
 }
 
 if (dnues2(gois_ncounts$SYMBOL)[1] > 0) {
