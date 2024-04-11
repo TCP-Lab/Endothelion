@@ -13,7 +13,7 @@ cd ~/WORKS/Endothelion/Lines/hCMEC_D3/GSE205739
 	rm -rf MultiQC_out/ Z_QC_MultiQC_GSE* Count_Matrix_genes_TPM.tsv Z_Counts_GSE*
 	```
 1. Then I moved to the `Count` subdirectory and run the `_prefixer` function
-	over each ENA-SRR sub-directory
+	over each ENA-SRR sub-directory (the function was _sourced_ beforehand).
 	```bash
 	 cd Counts
 	 
