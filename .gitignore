@@ -1,5 +1,6 @@
 # Local data folders
 /data/out/
+/data/in/Lines/
 
 # Sublime Text project files
 *.sublime-*
