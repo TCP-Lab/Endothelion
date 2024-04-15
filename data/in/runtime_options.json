@@ -1,6 +1,5 @@
 {
-    "count_type": "TPM",
+    "GOIs": "./data/in/ICT_set.csv",
     "threshold_adapt": true,
-    "threshold_value": 2,
-    "GOIs": "./data/in/ICT_set.csv"
+    "threshold_value": 2
 }

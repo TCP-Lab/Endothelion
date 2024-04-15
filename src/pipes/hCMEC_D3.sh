@@ -1,33 +1,43 @@
 #!/bin/bash
 
 # ==============================================================================
-#? ICT absolute expression in hCMEC-D3 cell line
+#? ICT absolute expression profile in hCMEC-D3 cell line
 #?
-#? This pipeline is used to visualize the absolute expression of some genes of
-#? interest (GOIs) out of a count matrix containing the whole genome and many
-#? biological replicates. The `endo_profiler` R script is used for this task.
-#? It sequentially takes as its first argument all the TSV files found in the
-#? input folder (including possible subfolders). Most of the parameter values
-#? are retrieved from the `runtime_options` JSON file. Namely,
-#?  1. *in_path*: the input folder (`./data/in` in a *Kerblam!* project);
-#?  2. *count_type*: count units (usually *TPMs* for absolute expression);
-#?  3. *threshold_adapt*: should a GMM be used to find the expression threshold?
-#?  4. *threshold_value*: threshold value or the number of Gaussian components;
-#?  5. *GOIs*: path to the list of GOIs.
+#? This pipeline provides graphical representation, in terms of bar chart, of
+#? basic descriptive statistics about the absolute expression of some given
+#? genes of interest (GOIs) out of count matrices containing the whole genome
+#? and many biological replicates. For the purpose of the Endothelion project,
+#? GOI list is the list of Ion Channels and Transporters (ICTs) genes as defined
+#? in the `ICT_set.csv` file (which actually also contains some GPCR receptors),
+#? but in principle it can be *any* set of genes. Most importantly, counts
+#? within the expression matrices are assumed to be already in TPM units to
+#? actually be suitable for absolute expression evaluation.
+#? The `endo_profiler` R script and the related Bash wrapper are used for this
+#? task. The shell wrapper first parses the the `runtime_options` JSON file to
+#? get the user-defined parameter values set therein. Then, it searches the
+#? input directory (including possible subfolders) for all the available count
+#? matrices, which will be sequentially fed to the R script for actual data
+#? analysis. Currently, the runtime options are just three:
+#?  1. *GOIs*: path to the list of GOIs;
+#?  2. *threshold_adapt*: should a GMM be used to find the expression threshold?
+#?  3. *threshold_value*: threshold value or the number of Gaussian components.
 #? Specifically, when `threshold_adapt == true`, the integer entered as the
 #? `threshold_value` indicates the number of Gaussian components to be used in
 #? the mixture for the adaptive calculation of the expression threshold. In
 #? contrast, when `threshold_adapt == false`, the `threshold_value` is the real
 #? value to be used as constant threshold in all the experiments.
 #? The last parameter of `endo_profiler.R` (i.e., the output directory) is not
-#? retrieved from the JSON option file. On the contrary it is hard-coded so as
-#? to recreate within the `./data/out` directory (*Kerblam!* standard), a
-#? filesystem similar to that found in `./data/in`, but containing only the
-#? results of the analysis.
-#? More details on the actual analysis algorithm and its expected arguments can
-#? be found in the header of the R script file `./src/endo_profiler.R`.
+#? retrieved from the JSON option file. On the contrary it is *hard-coded* by
+#? the wrapper so as to recreate within the `./data/out` directory (*Kerblam!*
+#? standard), a filesystem tracing the one found in `./data/in`, but containing
+#? only the results of the analysis.
+#? More details about the analysis algorithm and its expected arguments can be
+#? found in the header of the R script file `./src/endo_profiler.R`.
 # ==============================================================================
 
-# --- General settings and variables -------------------------------------------
+# --- The pipeline starts here -------------------------------------------------
 
+# ICT absolute expression profile in hCMEC-D3 cell line
 bash ./src/endo_profiler_wrap.sh "./data/in/Lines/hCMEC_D3/"
+
+echo -e "\e[1;32mPIPELINE SUCCESSFULLY COMPLETED\e[1;32m\n"
