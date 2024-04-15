@@ -25,4 +25,8 @@ echo -e "\n\e[1;32mSTARTING GLOBAL PROFILING\e[0m\n"
 # Global ICT absolute expression profiling
 bash ./src/endo_profiler_wrap.sh "./data/in/"
 
-echo -e "\e[1;32mPIPELINE SUCCESSFULLY COMPLETED\e[0m\n"
+if [[ $? -eq 0 ]]; then
+	echo -e "\e[1;32mPIPELINE COMPLETED SUCCESSFULLY\e[0m\n"
+else
+	echo -e "\e[1;31mPIPELINE FAILED\e[0m\n"
+fi
