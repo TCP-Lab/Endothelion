@@ -28,5 +28,5 @@ bash ./src/endo_profiler_wrap.sh "./data/in/Lines/hCMEC_D3/"
 if [[ $? -eq 0 ]]; then
 	echo -e "\e[1;32mPIPELINE COMPLETED SUCCESSFULLY\e[0m\n"
 else
-	echo -e "\e[1;31mPIPELINE FAILED\e[0m\n"
+	echo -e "\e[1;31m\nPIPELINE FAILED\e[0m\n"
 fi
