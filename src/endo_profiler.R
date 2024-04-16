@@ -1,4 +1,5 @@
-#
+#!/usr/bin/env -S Rscript --vanilla
+
 # Endothelion Project
 #
 # Assumptions and format of expected arguments.
@@ -116,7 +117,7 @@ count_file |> basename2() |> {\(x)strsplit(x,"_")[[1]][1]}() -> GEO_id
 # Load and heading check
 count_file |> read.delim() -> ncounts
 if (!("gene_id" %in% colnames(ncounts) && "SYMBOL" %in% colnames(ncounts))) {
-  stop("ERROR: Bad formatted count table... Stop executing.")
+  stop("\n Bad formatted count table... Stop executing.")
 }
 
 # Subset
@@ -126,7 +127,7 @@ sample_size <- dim(ncounts)[2] - 1
 
 # Normalization check: sum(TPMs) == 10^6
 if (count_type == "TPM" && any(abs(colSums(ncounts[,-1]) - 1e6) > 5)) {
-  stop("ERROR: Bad TPM normalization...Stop executing.")
+  cat("\nWARNING:\n Bad TPM normalization... Check counts in matrix!\n")
 }
 
 # Threshold --------------------------------------------------------------------
@@ -214,7 +215,7 @@ if (setdiff(gois, gois_ncounts$SYMBOL) |> length() > 0) {
 }
 
 if (dnues2(gois_ncounts$SYMBOL)[1] > 0) {
-  stop("ERROR: Cannot handle duplicated gene symbols...")
+  stop("\n Cannot handle duplicated gene symbols...")
 }
 
 # Possibly collapse duplicated Gene Symbols (keeping the most expressed)
