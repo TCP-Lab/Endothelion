@@ -2,7 +2,8 @@
 version = "1.0.0-rc.1"
 
 [data.profiles.test]
-"runtime_options.json" = "runtime_options_test.json"
+"Lines/hCMEC_D3/GSE138309_CountMatrix_genes_TPM.tsv" = "Lines/hCMEC_D3/test_GSE138309_CountMatrix_genes_TPM.tsv"
+"Lines/hCMEC_D3/GSE139133_CountMatrix_genes_TPM.tsv" = "Lines/hCMEC_D3/test_GSE139133_CountMatrix_genes_TPM.tsv"
 
 [data.remote]
 "https://zenodo.org/records/10960146/files/GSE138309_CountMatrix_genes_TPM.tsv" = "Lines/hCMEC_D3/GSE138309_CountMatrix_genes_TPM.tsv"
