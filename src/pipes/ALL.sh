@@ -19,12 +19,13 @@
 #? be found in the header of the R script file `./src/endo_profiler.R`.
 # ==============================================================================
 
-# --- The pipeline starts here -------------------------------------------------
 echo -e "\n\e[1;32mSTARTING GLOBAL PROFILING\e[0m\n"
+# --- The pipeline starts here -------------------------------------------------
 
 # Global ICT absolute expression profiling
 bash ./src/endo_profiler_wrap.sh "./data/in/"
 
+# --- The pipeline ends here ---------------------------------------------------
 if [[ $? -eq 0 ]]; then
 	echo -e "\e[1;32mPIPELINE COMPLETED SUCCESSFULLY\e[0m\n"
 else

@@ -19,12 +19,13 @@
 #? be found in the header of the R script file `./src/endo_profiler.R`.
 # ==============================================================================
 
-# --- The pipeline starts here -------------------------------------------------
 echo -e "\n\e[1;32mSTARTING hCMEC-D3 PROFILING\e[0m\n"
+# --- The pipeline starts here -------------------------------------------------
 
 # ICT absolute expression profile in hCMEC-D3 cell line
 bash ./src/endo_profiler_wrap.sh "./data/in/Lines/hCMEC_D3/"
 
+# --- The pipeline ends here ---------------------------------------------------
 if [[ $? -eq 0 ]]; then
 	echo -e "\e[1;32mPIPELINE COMPLETED SUCCESSFULLY\e[0m\n"
 else

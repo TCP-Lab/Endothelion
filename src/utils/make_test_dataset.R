@@ -24,8 +24,8 @@ df <- df[logic,]
 
 file_name <- paste0("test_", proj, "_CountMatrix_genes_TPM.tsv")
 cat("----------------------------------------------------\n")
-cat("Saving: ", file_name,
-    "\n         Test count matrix with", dim(df)[1]," rows.\n")
+cat("Saving:", file_name,
+    "\n        Test count matrix with", dim(df)[1], "rows.\n")
 cat("----------------------------------------------------\n\n")
 
 # Save the slim matrix within the target path

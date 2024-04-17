@@ -204,8 +204,8 @@ gois_file |> read.delim(header = FALSE) |> unlist() -> gois
 
 # Intersection -----------------------------------------------------------------
 
-# Explode the dataframe (collapsed by 'cc_assembler.R' from x.FASTQ), then
-# proceed with row subsetting.
+# Explode the dataframe (collapsed by 'assembler.R' from x.FASTQ), then proceed
+# with row subsetting.
 tidyr::separate_rows(ncounts, SYMBOL, sep = ",") |> as.data.frame() |>
   subset(SYMBOL %in% gois) -> gois_ncounts
 

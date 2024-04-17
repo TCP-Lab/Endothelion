@@ -17,7 +17,7 @@
 # according to their depth level ('%d'). This is because the 'for' loop needs to
 # process files starting from the deepest levels of the filesystem, otherwise it
 # won't be able to access those files whose parent directory has already been
-# renamed. 
+# renamed.
 
 function _prefixer {
 

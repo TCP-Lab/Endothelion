@@ -1,8 +1,13 @@
 # Utility Scripts and Functions
 
-## The prefixer patch
-
-From each GEO project directory, e.g.,
+## The ___prefixer___ patch
+The pre-release version of x.FASTQ (until _x.FASTQ_ Ver.Sum x.13.62.0, April 11,
+2024) didn't use any suffix ID for STAR/RSEM (i.e., _anqFASTQ_ module) output
+files, thus preventing _MultiQC_ from including them in the final report.
+`_prefixer` function can be used as a patch for such _x.FASTQ_ old output by
+prepending the unique ENA-SRR run ID to every file and folder found within the
+target directory, including possible subdirectories. Specifically, from each GEO
+project directory, e.g.,
 ```bash
 cd ~/WORKS/Endothelion/Lines/hCMEC_D3/GSE205739
 ```
@@ -13,7 +18,8 @@ cd ~/WORKS/Endothelion/Lines/hCMEC_D3/GSE205739
 	rm -rf MultiQC_out/ Z_QC_MultiQC_GSE* Count_Matrix_genes_TPM.tsv Z_Counts_GSE*
 	```
 1. Then I moved to the `Count` subdirectory and run the `_prefixer` function
-	over each ENA-SRR sub-directory (the function was _sourced_ beforehand).
+	over each ENA-SRR sub-directory (the function is supposed to have been
+	_sourced_ beforehand).
 	```bash
 	 cd Counts
 	 
@@ -65,3 +71,55 @@ cd ~/WORKS/Endothelion/Lines/hCMEC_D3/GSE205739
 	# `GSE205739_wgets.sh` that I deleted before sending stuff to Zenodo).
 	scp fear@130.192.101.241:/home/fear/WORKS/Endothelion/Lines/hCMEC_D3/GSE205739/GSE205739* .
 	```
+
+## Generate a test dataset
+`make_test_dataset.sh` Bash script can be used to generate a lightweight dataset
+suitable for testing changes or new features of _Endothelion_ pipelines. From
+the project directory, just run
+```bash
+./src/utils/make_test_dataset.sh
+```
+and the script will
+1. make the target directory `./data/in/Lines/hCMEC_D` (if it doesn't exist yet)
+	or, upon user confirmation, clean it by removing possible files already
+	present therein;
+1. download 2 _Endothelion_ count matrices (and related metadata) from _Zenodo_,
+	namely GEO series ___GSE138309___ and ___GSE139133___ featuring just 3 and 2
+	control samples, respectively;
+1. further resize them row-wise by keeping only the GOI entries and 5000 more
+	random genes (actually, this last step is performed by the R script of the
+	same name).
+1. save both these lightweight count matrices and a copy of the related metadata
+	after prepending a `test_` string to their names (according to the
+	`[data.profiles.test]` settings in `kerblam.toml`).
+
+__NOTE 1:__
+Since some of the 5000 random genes could be already present among the GOIs, the
+final length of the count matrices cannot be predicted exactly. However, if
+using `set.seed(7)` at the beginning of the R script, the resulting count
+matrices will have 5501 rows.
+
+__NOTE 2:__
+When running the _hCMEC_D3_ pipeline using the test data set, namely
+```bash
+kerblam run --profile test hCMEC_D3
+```
+the warning _Bad TPM normalization... Check counts in matrix!_ will be thrown.
+Clearly this is expected and perfectly normal, given the row-wise reduction of
+the count matrices.
+
+__NOTE 3:__
+For both count matrices, a further warning will be issued during the pipeline
+run, namely
+```
+WARNING:
+ Can't find these Genes of Interest in the Count Matrix:
+  CACNA1C
+  ANO5
+```
+Again, this is expected and perfectly normal, since count matrices were
+intersected with the list of GOIS during the row-reduction step _without_
+exploding their _Gene Symbol_ entries (as the `endo_profiler.R` script does),
+thus loosing the `ANO5,LOC102723370` and `CACNA1C,CACNA1C-IT2` genes. I kept
+this fortuitous feature to check `endo_profiler.R` capability of detecting
+possible missing GOIs among the genes included in the count matrix. 

@@ -1,10 +1,15 @@
 #!/bin/bash
 
+# This Bash script can be used to generate a lightweight data set suitable for
+# testing changes or new features of Endothelion pipelines. 
+
+# Retrieve paths
 utils_path="$(dirname "$(realpath "$0")")"
 endo_path="$(echo "$utils_path" | sed 's/\(Endothelion\).*/\1/')"
 target_path="${endo_path}/data/in/Lines/hCMEC_D3"
 gois_path="${endo_path}/data/in/ICT_set.csv"
 
+# Ask for user permission to clean the target directory
 printf "\nThis procedure will delete all files possibly present in"
 printf "\n  .${target_path#${endo_path}}\n\n"
 valid_ans=false
@@ -23,9 +28,11 @@ while ! $valid_ans; do
     fi
 done
 
+# Make the target directory (if it doesn't exist yet) or clean it if exists.
 mkdir -p "$target_path"
 rm "${target_path}"/*
 
+# Download two Endothelion count matrices from Zenodo and make them small
 projs=("GSE138309" "GSE139133")
 for proj in "${projs[@]}"; do
 	wget -O "${target_path}/${proj}_CountMatrix_genes_TPM.tsv" \
