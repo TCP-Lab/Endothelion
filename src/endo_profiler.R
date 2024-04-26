@@ -114,7 +114,7 @@ count_file |> basename2() |> {\(x)strsplit(x,"_")[[1]][1]}() -> GEO_id
 
 # Count Data -------------------------------------------------------------------
 
-# Load and heading check
+# Load count matrix and check header
 count_file |> read.delim() -> ncounts
 if (!("gene_id" %in% colnames(ncounts) && "SYMBOL" %in% colnames(ncounts))) {
   stop("\n Bad formatted count table... Stop executing.")
@@ -205,7 +205,7 @@ gois_file |> read.delim(header = FALSE) |> unlist() -> gois
 # Intersection -----------------------------------------------------------------
 
 # Explode the dataframe (collapsed by 'assembler.R' from x.FASTQ), then proceed
-# with row subsetting.
+# with row filtering (subsetting).
 tidyr::separate_rows(ncounts, SYMBOL, sep = ",") |> as.data.frame() |>
   subset(SYMBOL %in% gois) -> gois_ncounts
 

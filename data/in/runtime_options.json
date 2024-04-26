@@ -1,5 +1,5 @@
 {
     "GOIs": "./data/in/ICT_set.csv",
-    "threshold_adapt": true,
-    "threshold_value": 2
+    "threshold_adapt": false,
+    "threshold_value": 1
 }

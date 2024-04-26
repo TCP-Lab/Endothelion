@@ -8,6 +8,7 @@ Large-scale comparison of ICT expression in healthy endothelium.
 
 ### R
 - ggplot2 (>= 3.5.0)
+- tidyr (>= 1.3.1)
 - r4tcpl (>= 1.5.1)
 
 ## Phase I: Absolute Assessment

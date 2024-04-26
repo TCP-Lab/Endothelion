@@ -38,7 +38,7 @@ threshold_value="$(cat $OPTS | jq -r ".threshold_value")"
 # --- Main program -------------------------------------------------------------
 
 # Global count of TSV target files
-files_found=$(find "${in_path}" -maxdepth 4 -type f \
+files_found=$(find "$in_path" -maxdepth 4 -type f \
 	-iname "*_CountMatrix_*.tsv" | wc -l)
 echo -e "Found ${files_found} TSV files to analyze.\n"
 
@@ -47,7 +47,7 @@ echo -e "Found ${files_found} TSV files to analyze.\n"
 OIFS="$IFS"
 IFS=$'\n'
 counter=1
-for count_matrix in $(find "${in_path}" -maxdepth 4 -type f \
+for count_matrix in $(find "$in_path" -maxdepth 4 -type f \
 	-iname "*_CountMatrix_*.tsv")
 do
 	echo "----------------------------------------------------"
@@ -59,7 +59,7 @@ do
 		"$threshold_adapt" \
 		"$threshold_value" \
 		"$GOIs" \
-		"./data/out/$(dirname "${count_matrix#${in_path}}")"
+		"${in_path/\/in\//\/out\/}"
 	echo
 	((counter++))
 done
