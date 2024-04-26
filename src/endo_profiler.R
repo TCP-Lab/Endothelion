@@ -16,12 +16,8 @@
 # In addition, the files containing the count matrices are supposed to be
 #  - saved in TSV format;
 #  - named according to the following pattern:
-#
-#       <GEOid>_<metric>_<depth>_<PE/SE>.tsv
-#
-#    E.g., a study with an average depth of 40 megareads per sample, paired-end,
-#
-#       GSE76528_TPM_40_PE.tsv
+#           <SeriesID>_CountMatrix_<level>_<metric>.tsv 
+#    E.g.,  GSE138309_CountMatrix_genes_TPM.tsv
 #
 # GOIs are assumed to be listed as plain gene symbols, arranged in a single
 # column (CSV or TSV) with no header.
