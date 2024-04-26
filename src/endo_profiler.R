@@ -104,13 +104,14 @@ if (! file.exists(gois_file)) {
 
 # Dirs & Bases -----------------------------------------------------------------
 
-# Set the output folder
-if (! dir.exists(out_dir)) {
-  dir.create(out_dir, recursive = TRUE)
-}
-
 # Retrieve the GEO ID from input file name
 count_file |> basename2() |> {\(x)strsplit(x,"_")[[1]][1]}() -> GEO_id
+
+out_subdir <- file.path(out_dir, GEO_id)
+# Set the output folder
+if (! dir.exists(out_subdir)) {
+  dir.create(out_subdir, recursive = TRUE)
+}
 
 # Count Data -------------------------------------------------------------------
 
@@ -141,7 +142,7 @@ if (threshold_adapt == "true") {
   savePlots(
     \(){boxplot(only_counts)},
     figure_Name = paste0(GEO_id, "_boxplot"),
-    figure_Folder = out_dir,
+    figure_Folder = out_subdir,
     pdf_out = FALSE)
   
   # Find the expression threshold adaptively
@@ -180,7 +181,7 @@ if (threshold_adapt == "true") {
       par(adj = original_adj) # Restore the original 'adj' value
     },
     figure_Name = paste0(GEO_id, "_threshold"),
-    figure_Folder = out_dir)
+    figure_Folder = out_subdir)
   
   if (thr < 1) {
     cat("\nWARNING:\n Adaptive threshold from GMM returned",
@@ -240,7 +241,7 @@ gois_expression <- data.frame(Symbol = gois_ncounts$SYMBOL,
 
 # Saving as CSV
 write.csv(gois_expression,
-          file.path(out_dir,
+          file.path(out_subdir,
                     paste0(GEO_id, "_log2", count_type, "_profileReport.csv")))
 
 # Bar Chart --------------------------------------------------------------------
@@ -297,7 +298,7 @@ savePlots(
   \(){print(gg_thr)},
   width_px = 2000,
   figure_Name = paste0(GEO_id, "_log2", count_type, "_chart"),
-  figure_Folder = out_dir)
+  figure_Folder = out_subdir)
 
 # END --------------------------------------------------------------------------
 
