@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==============================================================================
-#? ICT absolute expression profile in hCMEC-D3 cell line
+#? ICT absolute expression analysis in hCMEC-D3 cell line
 #?
 #? This pipeline performs the *Phase I* Endothelion task for ICT absolute
 #? expression assessment applied to multiple hCMEC-D3 cell line datasets.
@@ -19,11 +19,17 @@
 #? be found in the header of the R script file `./src/endo_profiler.R`.
 # ==============================================================================
 
-echo -e "\n\e[1;32mSTARTING hCMEC-D3 PROFILING\e[0m\n"
+echo -e "\n\e[1;35mSTARTING hCMEC-D3 PROFILING\e[0m"
+echo -e "\e[1;35m===========================\e[0m"
 # --- The pipeline starts here -------------------------------------------------
 
-# ICT absolute expression profile in hCMEC-D3 cell line
+# ICT absolute expression profiling in hCMEC-D3 cell line
+echo -e "\n\e[1;32mSTEP 1 :: absolute expression profiling\e[0m"
 bash ./src/endo_profiler_wrap.sh "./data/in/Lines/hCMEC_D3/"
+
+# Cross-study statistics from functional gene sets in hCMEC-D3 cell line
+echo -e "\n\e[1;32mSTEP 2 :: cross-study statistics\e[0m"
+bash ./src/endo_function_wrap.sh "./data/in/Lines/hCMEC_D3/"
 
 # --- The pipeline ends here ---------------------------------------------------
 if [[ $? -eq 0 ]]; then
