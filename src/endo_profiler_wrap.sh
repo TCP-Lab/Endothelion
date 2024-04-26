@@ -40,7 +40,7 @@ threshold_value="$(cat $OPTS | jq -r ".threshold_value")"
 # Global count of TSV target files
 files_found=$(find "$in_path" -maxdepth 4 -type f \
 	-iname "*_CountMatrix_*.tsv" | wc -l)
-echo -e "Found ${files_found} TSV count matrices to analyze...\n"
+echo -e "          Found ${files_found} TSV count matrices\n"
 
 # Looping through files with spaces in their names or paths is not such a
 # trivial thing...
