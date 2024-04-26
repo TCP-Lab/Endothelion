@@ -233,16 +233,44 @@ average_ncounts <- rowMeans(gois_ncounts[,-1], na.rm = TRUE)
 sd_ncounts <- apply(gois_ncounts[,-1], 1, sd, na.rm = TRUE)
 sem_ncounts <- sd_ncounts/sqrt(sample_size)
 
-# Final expression matrix
-gois_expression <- data.frame(Symbol = gois_ncounts$SYMBOL,
-                              Mean = average_ncounts,
-                              Std_Dev = sd_ncounts,
-                              SEM = sem_ncounts)
-
+# Final expression matrices
+# All GOIs
+gois_all_stats <- data.frame(Symbol = gois_ncounts$SYMBOL,
+                             Mean = average_ncounts,
+                             Std_Dev = sd_ncounts,
+                             SEM = sem_ncounts)
 # Saving as CSV
-write.csv(gois_expression,
+write.csv(gois_all_stats,
           file.path(out_subdir,
                     paste0(GEO_id, "_log2", count_type, "_profileReport.csv")))
+
+# Only expressed GOIs
+gois_all_stats |> subset(Mean > thr) -> gois_high_stats
+
+# A (temporary) patch for the TGS dataset from r4tcpl v.1.5.1
+patch4TGS <- c("MCUB",
+               "MCUR1",
+               "KCNRG",
+               "KCNIP1",
+               "KCNIP2",
+               "KCNIP3",
+               "KCNIP4",
+               "CATSPERE",
+               "CATSPERZ")
+ICs <- c(TGS$ICs, patch4TGS)
+trans <- TGS$trans
+
+# Only expressed ICTs
+gois_high_stats |> subset(Symbol %in% c(ICs, trans)) -> ICT_high_stats
+
+# Only expressed ICs
+gois_high_stats |> subset(Symbol %in% ICs) -> IC_high_stats
+
+# Only expressed transporters
+gois_high_stats |> subset(Symbol %in% trans) -> trans_high_stats
+
+# Only expressed receptors (GPCRs and RTKs)
+gois_high_stats |> subset(!Symbol %in% c(ICs, trans)) -> GPCRTK_high_stats
 
 # Bar Chart --------------------------------------------------------------------
 
@@ -251,54 +279,64 @@ line_color <- "gray17"
 err_color <- "gray17"
 
 # Limits
-y_max <- max(gois_expression$Mean)
-y_max_sd <- gois_expression$Std_Dev[gois_expression$Mean == y_max]
+y_max <- max(gois_all_stats$Mean)
+y_max_sd <- gois_all_stats$Std_Dev[gois_all_stats$Mean == y_max]
 y_limit <- ceiling(y_max + y_max_sd)
 
-# Prepare the Frame
-gg_frame <-
-  ggplot(data = gois_expression,
-         aes(x = Symbol, y = Mean, fill = Symbol)) +
-  theme_bw(base_size = 15, base_rect_size = 1.5) +
-  theme(axis.text.x = element_text(size = 7, angle = 90,
-                                   vjust = 0.5, hjust = 1),
-        axis.text.y = element_text(size = 14),
-        axis.title = element_text(size = 14),
-        legend.position = "none") +
-  scale_y_continuous(expand = c(0.01, 0.02),
-                     breaks = seq(0, y_limit, 0.5)) +
-  xlab("Genes of Interest") +
-  ylab(substitute(log[2]*(x+1), list(x = count_type))) +
-  ggtitle(label = paste0(GEO_id, " (n = ", sample_size,")"))
+gois_stats <- list(allGOIs = gois_all_stats,
+                   highGOIs = gois_high_stats,
+                   highICTs = ICT_high_stats,
+                   highICs = IC_high_stats,
+                   highTrans = trans_high_stats,
+                   highGPCRTKs = GPCRTK_high_stats)
 
-# Draw the Bars
-gg_bars <- gg_frame +
-  geom_bar(stat = "identity", width = 0.75) +
-  geom_errorbar(aes(ymin = Mean - Std_Dev,
-                    ymax = Mean + Std_Dev),
-                linewidth = 1.0, width = 0.5, color = err_color)
-
-# # Alternative with borders
-# gg_bars <- gg_frame +
-#   geom_bar(stat = "identity", width = 0.7,
-#            color = line_color, linewidth = 0.1) +
-#   geom_errorbar(aes(ymin = Mean - Std_Dev,
-#                     ymax = Mean + Std_Dev),
-#                 linewidth = 1.0, width = 0.5, color = err_color)
-
-# Add the Expression Threshold
-gg_thr <- gg_bars +
-  geom_hline(yintercept = thr,
-             linetype = "dashed",
-             color = line_color,
-             linewidth = 1)
-
-# Save the Chart
-savePlots(
-  \(){print(gg_thr)},
-  width_px = 2000,
-  figure_Name = paste0(GEO_id, "_log2", count_type, "_chart"),
-  figure_Folder = out_subdir)
+for (name in names(gois_stats)) {
+  
+  # Prepare the Frame
+  gg_frame <-
+    ggplot(data = gois_stats[[name]],
+           aes(x = Symbol, y = Mean, fill = Symbol)) +
+    theme_bw(base_size = 15, base_rect_size = 1.5) +
+    theme(axis.text.x = element_text(size = 10, angle = 90,
+                                     vjust = 0.5, hjust = 1),
+          axis.text.y = element_text(size = 14),
+          axis.title = element_text(size = 14),
+          legend.position = "none") +
+    scale_y_continuous(expand = c(0.01, 0.02),
+                       breaks = seq(0, y_limit, 0.5)) +
+    xlab("Genes of Interest") +
+    ylab(substitute(log[2]*(x+1), list(x = count_type))) +
+    ggtitle(label = paste0(GEO_id, " (n = ", sample_size,")"))
+  
+  # Draw the Bars
+  gg_bars <- gg_frame +
+    geom_bar(stat = "identity", width = 0.75) +
+    geom_errorbar(aes(ymin = Mean - Std_Dev,
+                      ymax = Mean + Std_Dev),
+                  linewidth = 1.0, width = 0.5, color = err_color)
+  
+  # # Alternative with borders
+  # gg_bars <- gg_frame +
+  #   geom_bar(stat = "identity", width = 0.7,
+  #            color = line_color, linewidth = 0.1) +
+  #   geom_errorbar(aes(ymin = Mean - Std_Dev,
+  #                     ymax = Mean + Std_Dev),
+  #                 linewidth = 1.0, width = 0.5, color = err_color)
+  
+  # Add the Expression Threshold
+  gg_thr <- gg_bars +
+    geom_hline(yintercept = thr,
+               linetype = "dashed",
+               color = line_color,
+               linewidth = 1)
+  
+  # Save the Chart
+  savePlots(
+    \(){print(gg_thr)},
+    width_px = 2000,
+    figure_Name = paste0(GEO_id, "_log2", count_type, "_", name, "_chart"),
+    figure_Folder = out_subdir)
+}
 
 # END --------------------------------------------------------------------------
 
