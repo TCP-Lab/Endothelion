@@ -30,8 +30,14 @@ function _prefixer {
 	local target_dir="$(realpath "${1:-""}")"
 	local prefix="${2:-$(basename "${target_dir}")}"
 
+	# Check some arguments
 	if [[ -z "$target_dir" ]]; then
 		echo "Invalid target directory."
+		return
+	fi
+	if [[ "$target_dir" != "${HOME}/WORKS/Endothelion/"* ]]; then
+		echo "Target directory out of scope."
+		echo "'_prefixer' can operate just inside ~/WORKS/Endothelion."
 		return
 	fi
 
