@@ -29,7 +29,7 @@ bash ./src/endo_profiler_wrap.sh "./data/in/Lines/hCMEC_D3/"
 
 # Cross-study statistics from functional gene sets in hCMEC-D3 cell line
 echo -e "\n\e[1;32mSTEP 2 :: cross-study statistics\e[0m"
-bash ./src/endo_function_wrap.sh "./data/in/Lines/hCMEC_D3/"
+bash ./src/endo_function_wrap.sh "./data/out/Lines/hCMEC_D3/"
 
 # --- The pipeline ends here ---------------------------------------------------
 if [[ $? -eq 0 ]]; then

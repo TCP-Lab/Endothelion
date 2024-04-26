@@ -29,7 +29,7 @@ bash ./src/endo_profiler_wrap.sh "./data/in/"
 
 # Cross-study statistics from functional gene sets in all endo-models
 echo -e "\n\e[1;32mSTEP 2 :: cross-study statistics\e[0m"
-bash ./src/endo_function_wrap.sh "./data/in/"
+bash ./src/endo_function_wrap.sh "./data/out/"
 
 # --- The pipeline ends here ---------------------------------------------------
 if [[ $? -eq 0 ]]; then
