@@ -38,7 +38,7 @@ central_tendency="$(cat $OPTS | jq -r ".central_tendency")"
 models_found=$(find "$target_path" -type f -iname "*profileReport.csv" \
 	| xargs -d "\n" -n 1 dirname | xargs -d "\n" -n 1 dirname \
 	| sort | uniq | wc -l)
-echo -e "          Found ${models_found} endo-model(s)\n"
+echo -e "          found ${models_found} endo-model(s)\n"
 
 # Looping through files with spaces in their names or paths is not such a
 # trivial thing...
