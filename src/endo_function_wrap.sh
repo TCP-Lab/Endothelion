@@ -1,7 +1,13 @@
 #!/bin/bash
 
 # ==============================================================================
-# Description here ...
+# To find the different endothelial models (endo-models) output directory is
+# first searched for all "*profileReport.csv" files as returned from the
+# previous analysis step, then basenames and the lowest levels of their paths
+# (i.e., the GEO series ID part) are removed applying `dirname` command twice.
+# Unique results of such `find` statement represent the endo-models addressed by
+# the pipeline, under the hypothesis that input filesystem was properly
+# organized.
 # ==============================================================================
 
 # --- General settings and variables -------------------------------------------
