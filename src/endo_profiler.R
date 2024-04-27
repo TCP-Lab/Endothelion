@@ -238,7 +238,8 @@ gois_all_stats <- data.frame(Symbol = gois_ncounts$SYMBOL,
 # Saving as CSV
 write.csv(gois_all_stats,
           file.path(out_subdir,
-                    paste0(GEO_id, "_log2", count_type, "_profileReport.csv")))
+                    paste0(GEO_id, "_log2", count_type, "_profileReport.csv")),
+          row.names = FALSE)
 
 # Only expressed GOIs
 gois_all_stats |> subset(Mean > thr) -> gois_high_stats
