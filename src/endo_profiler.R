@@ -117,7 +117,7 @@ if (!("gene_id" %in% colnames(ncounts) && "SYMBOL" %in% colnames(ncounts))) {
   stop("\n Bad formatted count table... Stop executing.")
 }
 
-# Subset
+# Subsetting
 regex <- paste0("^SYMBOL$|_", count_type, "$")
 ncounts <- ncounts[,grep(regex, colnames(ncounts))]
 sample_size <- dim(ncounts)[2] - 1

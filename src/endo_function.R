@@ -67,12 +67,19 @@ gois_stats_files <- list.files(path = endo_model,
                                pattern = "_profileReport\\.csv$",
                                full.names = TRUE, recursive = TRUE)
 
+
+
 # Read the files into separate data frames and store them in a list
-gois_stats_list <- lapply(gois_stats_files, read.csv)
+gois_stats_list <- lapply(gois_stats_files, function(x){
+  df <- read.csv(x)
+  key <- grep("Symbol", colnames(df))
+  colnames(df)[-key] <- paste0(colnames(df)[-key], "_", basename(dirname(x)))
+  return(df)
+})
+
 
 # Merge the data frames based on the 'Symbol' column
-gois_stats <- Reduce(\(x, y) merge(x, y, by = "Symbol",
-                                   all = TRUE, no.dups = TRUE),
+gois_stats <- Reduce(\(x, y) merge(x, y, by = "Symbol", all = TRUE),
                      gois_stats_list)
 
 
@@ -82,7 +89,7 @@ gois_stats <- Reduce(\(x, y) merge(x, y, by = "Symbol",
 index <- grep("^Mean", colnames(gois_stats))
 average_expr <- rowMeans(gois_stats[,index], na.rm = TRUE)
 sd_expr <- apply(gois_stats[,index], 1, sd, na.rm = TRUE)
-sem_expr <- sd_ncounts/sqrt(length(index))
+sem_expr <- sd_expr/sqrt(length(index))
 
 # Final average expression
 average_expression <- data.frame(Symbol = gois_stats$Symbol,
@@ -95,24 +102,31 @@ average_expression <- data.frame(Symbol = gois_stats$Symbol,
 
 # Functional Subsetting --------------------------------------------------------
 
-
 # Get the list of functional subsets
 subGOIs_files <- list.files(path = dirname(gois_file),
                             pattern = paste0("^", subGOIs_prefix, ".*\\.csv$"),
                             full.names = TRUE, recursive = TRUE)
 
 # Read the files into separate data frames and store them in a list
-subGOIs_list <- lapply(subGOIs_files, \(x) read.csv(x, header = FALSE))
+subGOIs_list <- sapply(subGOIs_files, \(x) read.csv(x, header = FALSE),
+                       simplify = TRUE, USE.NAMES = TRUE)
 
-i=1
-for (subGOIs in subGOIs_list) {
-  average_expression |> subset(Symbol %in% unlist(subGOIs)) |> write.csv(file = file.path(out_dir, basename(subGOIs_files)[i]))
-i=i+1
-  }
+
+
+
+for (file_name in names(subGOIs_list)) {
+  
+  file_name |> basename() |>
+    sub(subGOIs_prefix, "AverExpress_", x=_) |>
+    sub("\\.csv\\..*$", ".csv", x=_) -> file_label
+  
+  average_expression |> subset(Symbol %in% subGOIs_list[[file_name]]) |>
+    write.csv(file = file.path(out_dir, file_label), row.names = FALSE)
+}
 
 
 
 
 # END --------------------------------------------------------------------------
 
-cat("\n", GEO_id, " is done!\n", sep = "")
+cat("\n", basename(endo_model), " is done!\n", sep = "")
