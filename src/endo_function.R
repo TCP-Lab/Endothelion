@@ -8,9 +8,6 @@
 
 # Packages ---------------------------------------------------------------------
 
-#library(r4tcpl)
-# library(tidyr)
-
 # Input Loading-----------------------------------------------------------------
 
 # General error message
@@ -59,17 +56,20 @@ if (! file.exists(gois_file)) {
   quit(status = 4)
 }
 
-# Data Loading -----------------------------------------------------------------
+# Set the output folder
+if (! dir.exists(out_dir)) {
+  dir.create(out_dir, recursive = TRUE)
+}
 
+# Data Loading -----------------------------------------------------------------
 
 # Get the list of files ending with '_profileReport.csv'
 gois_stats_files <- list.files(path = endo_model,
                                pattern = "_profileReport\\.csv$",
                                full.names = TRUE, recursive = TRUE)
 
-
-
-# Read the files into separate data frames and store them in a list
+# Read the files into separate data frames with distinctive column names and
+# store them in a list
 gois_stats_list <- lapply(gois_stats_files, function(x){
   df <- read.csv(x)
   key <- grep("Symbol", colnames(df))
@@ -77,15 +77,13 @@ gois_stats_list <- lapply(gois_stats_files, function(x){
   return(df)
 })
 
-
 # Merge the data frames based on the 'Symbol' column
 gois_stats <- Reduce(\(x, y) merge(x, y, by = "Symbol", all = TRUE),
                      gois_stats_list)
 
-
 # Cross-study Synthesis --------------------------------------------------------
 
-# Compute cross-study stats (only mean is implemented in this draft)
+# Compute cross-study stats (only 'mean' is implemented in this draft)
 index <- grep("^Mean", colnames(gois_stats))
 average_expr <- rowMeans(gois_stats[,index], na.rm = TRUE)
 sd_expr <- apply(gois_stats[,index], 1, sd, na.rm = TRUE)
@@ -97,35 +95,36 @@ average_expression <- data.frame(Symbol = gois_stats$Symbol,
                                  Std_Dev = sd_expr,
                                  SEM = sem_expr)
 
-
-
+# Save full GOI set as CSV
+write.csv(average_expression,
+          file.path(out_dir, "AverExpress_ALL_GOIs.csv"),
+          row.names = FALSE)
 
 # Functional Subsetting --------------------------------------------------------
 
-# Get the list of functional subsets
+# Get the list of functional subsets to extract
 subGOIs_files <- list.files(path = dirname(gois_file),
                             pattern = paste0("^", subGOIs_prefix, ".*\\.csv$"),
                             full.names = TRUE, recursive = TRUE)
 
-# Read the files into separate data frames and store them in a list
+# Read the files into separate data frames and store them in a named list (since
+# 'subGOIs_files' is a character vector, its elements will be used to assign
+# names to output list)
 subGOIs_list <- sapply(subGOIs_files, \(x) read.csv(x, header = FALSE),
                        simplify = TRUE, USE.NAMES = TRUE)
 
-
-
-
+# Extract GOI subsets and save them with distinctive file names
 for (file_name in names(subGOIs_list)) {
   
+  # Modify input file names to get output names
   file_name |> basename() |>
     sub(subGOIs_prefix, "AverExpress_", x=_) |>
     sub("\\.csv\\..*$", ".csv", x=_) -> file_label
   
+  # Subset and save as CSV
   average_expression |> subset(Symbol %in% subGOIs_list[[file_name]]) |>
     write.csv(file = file.path(out_dir, file_label), row.names = FALSE)
 }
-
-
-
 
 # END --------------------------------------------------------------------------
 
