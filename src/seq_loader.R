@@ -2,43 +2,31 @@
 # Assumptions:
 #
 # 1 - Both data and metadata have file names starting with the same series
-#     (experiment, project) ID (both GEO and ENA are fine), followed by an
+#     (aka experiment or project) ID (both GEO and ENA are fine), followed by an
 #     underscore ("_") and either the distinctive string "CountMatrix" or "meta"
-#     if they are counts or metadata, respectively. Additional characters are
-#     allowed after this pattern, including either CSV or TSV file extensions.
-#     Examples of good file name patterns are:
+#     (ignoring case) if they are counts or metadata, respectively. Additional
+#     characters are allowed after this pattern, including either CSV or TSV
+#     file extensions. Examples of good file name patterns are:
 #
 #         GSE205739_CountMatrix_genes_TPM.tsv
+#         PRJNA847413_CountMatrix.csv
 #         GSE76528_meta.csv
 #
-# 2 - Metadata files have proper column names as table header, among which
+# 2 - Metadata files have proper column names as table header; among them only
 #     `ena_run` is mandatory, as the only ID that is certainly unique to each
 #     file.
 #
 # 3 - Count tables have proper column names as header, among which a mandatory
-#     ID column mtching the regex "gene.*id" or "transcript.*id" (usually being
+#     ID column matching the regex "gene.*id" or "transcript.*id" (usually being
 #     "gene_id" or "transcript_id", respectively).
 #
-# 4 - Columns in cout table are named according to the `ena_run` ID
+# 4 - In count table, the names of the columns containing the counts of each
+#     different run feature the corresponding `ena_run` ID (and possibly other
+#     text strings).
+#
 
-
-
-
-library(dplyr)
-
-
-setwd("../data/in/Lines/hCMEC_D3/")
-
-
-target_dir <- "."
-
-file_list <- list.files(path = target_dir,
-                        pattern = "\\.[ct]sv$",
-                        full.names = FALSE)
-
-
-file_list |> sub("_.*$", "", x=_) |> unique() -> series_IDs
-
+library(dplyr) # arrange, select
+library(rlang)  # Injection operator `!!`
 
 # Automatically adapt to CSV or TSV format
 read.xsv <- function(file, header = TRUE) {
@@ -51,43 +39,52 @@ read.xsv <- function(file, header = TRUE) {
   }
 }
 
-# Define a new binary operator (with an alias) to concatenate strings in pipe
-`%|+>%` <- `%+>%` <- \(x,y)paste0(x,y)
+# Define a new binary operator (with 2 aliases) to concatenate strings in pipe
+`%|+>%` <- `%+>%` <- `%+%` <- \(x,y)paste0(x,y)
 
 
 
 
 
+
+setwd("../data/in/Lines/hCMEC_D3/")
+
+target_dir <- "."
+
+
+
+# Get all files inside target directory
+file_list <- list.files(path = target_dir,
+                        pattern = "\\.[ct]sv$",
+                        full.names = FALSE)
+
+# Clean series IDs
+file_list |> sub("_.*$", "", x=_) |> sort() |> unique() -> series_IDs
+
+# Build up the `bioModel` object
 lapply(series_IDs, function(series_ID, files = file_list) {
   
-  # Load count data and associated metadata
-  series_ID %|+>% "_CountMatrix.*" |> grep(files, value=T) |> read.xsv() -> counts_df
-  series_ID %|+>% "_meta.*" |> grep(files, value=T) |> read.xsv() -> meta_df
+  # Load data-metadata pairs (also sort metadata by `ena_run`)
+  series_ID %+% "_CountMatrix.*" |> grep(files, ignore.case=T, value=T) |> read.xsv() -> counts_df
+  series_ID %+% "_meta.*" |> grep(files, ignore.case=T, value=T) |> read.xsv() |> arrange(ena_run) -> meta_df
   
-  # Sort by `ena_run` and convert rows to list
-  meta_df |> arrange(ena_run) -> meta_df
+  # Convert rows to list
   meta_df |> split(seq(nrow(meta_df))) |> setNames(meta_df$ena_run) -> meta_list
   
-  # Find the ID column in count table
-  grep("gene.*id|transcript.*id", colnames(counts_df)) -> ids_index
+  # Find ID column in `counts_df`
+  "gene.*id|transcript.*id" |> grep(colnames(counts_df), ignore.case=T) -> ids_index
   
-  # Add read counts and gene IDs to each run in `meta_list` to build up the
-  # `series` object
-  lapply(meta_list, function(run, counts_df = counts_df, ids_index = ids_index){
-    # Find the correct SRR run column in count table
-    run$ena_run |> grep(colnames(counts_df)) -> counts_index
-    # Add gene IDs and read count data (if present) as a data frame to each run 
-    run |> append(list(gene = data.frame(IDs = counts_df[ids_index],
-                                         counts = counts_df[counts_index])))
-    }) -> series
+  # Build up a `series` object
+  lapply(meta_list, function(run, coun_df = counts_df, id_ndx = ids_index) {
+    # Look for run's count data...
+    run$ena_run |> grep(colnames(coun_df)) -> coun_ndx
+    # ...and add both counts (if present) and IDs to each run-list as a data frame
+    coun_df |> select(IDs = !!id_ndx, counts = !!coun_ndx) |> list(genes=_) |> append(run, values=_)
+  }) -> series
   
+  # Add annotation to each series
+  meta_df$ena_run |> paste(collapse = "|") |> grep(colnames(counts_df), invert=T) -> annot_index
+  counts_df |> select(!!annot_index) |> list(annotation=_) |> append(series, values=_)
   
-  meta_df$ena_run |> paste(collapse = "|") |>
-    grep(colnames(counts_df), invert = TRUE) -> annot_index
-  
-  series |> append(list(annotation = counts_df[,annot_index]))
-
-}) |> setNames(series_IDs) -> endoModel
-
-
+}) |> setNames(series_IDs) -> bioModel
 
