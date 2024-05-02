@@ -105,3 +105,29 @@ new_bioModel <- function(target_dir) {
 
 
 
+
+countMatrix.bioSeries <- function(series, annot = FALSE) {
+  # Find run elements
+  grep("SRR", names(series), ignore.case=T) -> run_index
+  
+  # Extract counts, restore run ID names, then merge into one data frame
+  series[run_index] |> lapply(\(run) {
+    counts_df <- run$genes
+    colnames(counts_df)[colnames(counts_df) == "counts"] <- run$ena_run
+    counts_df
+  }) |> Reduce(\(x, y) merge(x, y, by = "IDs", all = TRUE), x=_) -> count_matrix
+  
+  if (annot) {
+    # Get annotation
+    annot <- series$annotation
+    "gene.*id|transcript.*id" |> grep(colnames(annot), ignore.case=T) -> ids_index
+    count_matrix <- merge(annot, count_matrix,
+                          by.x = ids_index, by.y = "IDs", all.y = TRUE)
+  }
+  return(count_matrix)
+}
+
+
+
+
+
