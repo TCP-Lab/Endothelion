@@ -1,4 +1,8 @@
 
+
+
+# A constructor function for the bioModel S3 class
+# 
 # Assumptions:
 #
 # 1 - Both data and metadata have file names starting with the same series
@@ -47,44 +51,57 @@ read.xsv <- function(file, header = TRUE) {
 
 
 
-setwd("../data/in/Lines/hCMEC_D3/")
-
-target_dir <- "."
 
 
 
-# Get all files inside target directory
-file_list <- list.files(path = target_dir,
-                        pattern = "\\.[ct]sv$",
-                        full.names = FALSE)
 
-# Clean series IDs
-file_list |> sub("_.*$", "", x=_) |> sort() |> unique() -> series_IDs
+new_bioModel <- function(target_dir) {
 
-# Build up the `bioModel` object
-lapply(series_IDs, function(series_ID, files = file_list) {
+  # Get all files inside target directory
+  file_list <- list.files(path = target_dir,
+                          pattern = "\\.[ct]sv$",
+                          full.names = FALSE)
+
+
+
+
+  # Clean series IDs
+  file_list |> sub("_.*$", "", x=_) |> sort() |> unique() -> series_IDs
   
-  # Load data-metadata pairs (also sort metadata by `ena_run`)
-  series_ID %+% "_CountMatrix.*" |> grep(files, ignore.case=T, value=T) |> read.xsv() -> counts_df
-  series_ID %+% "_meta.*" |> grep(files, ignore.case=T, value=T) |> read.xsv() |> arrange(ena_run) -> meta_df
+  # Build up the bioModel object
+  lapply(series_IDs, function(series_ID, files = file_list) {
+    
+    # Load data-metadata pairs (also sort metadata by `ena_run`)
+    series_ID %+% "_CountMatrix.*" |> grep(files, ignore.case=T, value=T) |> read.xsv() -> counts_df
+    series_ID %+% "_meta.*" |> grep(files, ignore.case=T, value=T) |> read.xsv() |> arrange(ena_run) -> meta_df
+    
+    # Convert rows to list
+    meta_df |> split(seq(nrow(meta_df))) |> setNames(meta_df$ena_run) -> meta_list
+    
+    # Find ID column in `counts_df`
+    "gene.*id|transcript.*id" |> grep(colnames(counts_df), ignore.case=T) -> ids_index
+    
+    # Build up a `series` object
+    lapply(meta_list, function(run, coun_df = counts_df, id_ndx = ids_index) {
+      # Look for run's count data...
+      run$ena_run |> grep(colnames(coun_df)) -> coun_ndx
+      # ...and add both counts (if present) and IDs to each run-list as a data frame
+      coun_df |> select(IDs = !!id_ndx, counts = !!coun_ndx) |> list(genes=_) |> append(run, values=_)
+    }) -> series
+    
+    # Add annotation to each series
+    meta_df$ena_run |> paste(collapse = "|") |> grep(colnames(counts_df), invert=T) -> annot_index
+    counts_df |> select(!!annot_index) |> list(annotation=_) |> append(series, values=_) -> series
+    
+    # Make the series list an S3 object and return it
+    structure(series, class = "bioSeries")
+    
+  }) |> setNames(series_IDs) -> base_list
   
-  # Convert rows to list
-  meta_df |> split(seq(nrow(meta_df))) |> setNames(meta_df$ena_run) -> meta_list
-  
-  # Find ID column in `counts_df`
-  "gene.*id|transcript.*id" |> grep(colnames(counts_df), ignore.case=T) -> ids_index
-  
-  # Build up a `series` object
-  lapply(meta_list, function(run, coun_df = counts_df, id_ndx = ids_index) {
-    # Look for run's count data...
-    run$ena_run |> grep(colnames(coun_df)) -> coun_ndx
-    # ...and add both counts (if present) and IDs to each run-list as a data frame
-    coun_df |> select(IDs = !!id_ndx, counts = !!coun_ndx) |> list(genes=_) |> append(run, values=_)
-  }) -> series
-  
-  # Add annotation to each series
-  meta_df$ena_run |> paste(collapse = "|") |> grep(colnames(counts_df), invert=T) -> annot_index
-  counts_df |> select(!!annot_index) |> list(annotation=_) |> append(series, values=_)
-  
-}) |> setNames(series_IDs) -> bioModel
+  # Make the base list an S3 object and return it
+  structure(base_list, class = "bioModel")
+}
+
+
+
 
