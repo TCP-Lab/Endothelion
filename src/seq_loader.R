@@ -131,3 +131,40 @@ countMatrix.bioSeries <- function(series, annot = FALSE) {
 
 
 
+rowStats.bioSeries <- function(series, annot = FALSE) {
+  
+  # Get a log-transformed count matrix
+  count_matrix <- countMatrix.bioSeries(series, annot = annot)
+  count_index <- sapply(count_matrix, is.numeric)
+  count_matrix[,count_index] <- log2(count_matrix[,count_index] + 1)
+  
+  # Compute descriptive statistics (mean, SD, SEM)
+  average_counts <- rowMeans(count_matrix[,count_index], na.rm = TRUE)
+  sd_counts <- apply(count_matrix[,count_index], 1, sd, na.rm = TRUE)
+  sem_counts <- sd_counts/sqrt(sum(count_index))
+  
+  # Assemble results
+  row_stats <- count_matrix[,!count_index]
+  row_stats$Mean <- average_counts
+  row_stats$Std_Dev <- sd_counts
+  row_stats$SEM <- sem_counts
+  
+  return(row_stats)
+}
+
+
+
+
+a <- countMatrix.bioSeries(s$GSE195781, T)
+
+b <- rowStats.bioSeries(s$GSE195781, T)
+
+
+
+
+rowStats.bioModel <- function(model) {
+  
+}
+
+
+
