@@ -172,6 +172,11 @@ new_bioSeries <- function(series_ID, target_dir = ".") {
   meta_df$ena_run |> paste(collapse = "|") |> grep(colnames(counts_df), invert=T) -> annot_index
   counts_df |> select(!!annot_index) |> list(annotation=_) |> append(series, values=_) -> series
   
+  # Set names of elements as their own attributes (to access them later)
+  sapply(names(series), function(name) {
+    attr(series[[name]], "own_name") <- name
+    return(series[[name]])}) -> series
+  
   # Make `series` an S3 object (inheriting from class 'list') and return it
   structure(series, class = c("bioSeries", "list"))
 }
