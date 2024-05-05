@@ -1,39 +1,94 @@
-
-
-
-# A constructor function for the bioModel S3 class
-# 
-# Assumptions:
+# Constructors and methods for `bioSeries` and `bioModel` S3 classes
 #
-# 0 - Each model lives in a separate folder containing all series files for it.
+# Motivation
+# ~~~~~~~~~~
+# The `bioSeries` S3 class attempts to give an effective representation of the
+# hierarchical data structure whereby each transcriptomics study typically
+# consists of a series of sequencing runs (usually each referring to a different
+# RNA sample, coming from different biological sources).
+# Built on this, the `bioModel` S3 class addresses the need for grouping several
+# independent scientific studies together for the purpose of meta-analysis or
+# reanalysis. to group several.
+# In this regard, we introduce the following
 #
-# 1 - Both data and metadata have file names starting with the same series
-#     (aka experiment or project) ID (both GEO and ENA are fine), followed by an
-#     underscore ("_") and either the distinctive string "CountMatrix" or "meta"
-#     (ignoring case) if they are counts or metadata, respectively. Additional
-#     characters are allowed after this pattern, including either CSV or TSV
-#     file extensions. Examples of good file name patterns are:
+# Dictionary
+# ~~~~~~~~~~
+#   run:     the set of all raw reads from a single sequencing run, referred to
+#            by the ENA accession `(E|D|S)RR[0-9]{6,}` (without a corresponding
+#            GEO ID). Basically, each individual FASTQ file, or file pair in the
+#            case of non-interleaved PE reads.
+#   sample:  the set of all runs from the same biological RNA sample, referred
+#            to by the ENA accession `SAM(E|D|N)[A-Z]?[0-9]+` or a corresponding
+#            `GSM[0-9]+` GEO accession ID. Most of the times, runs and samples
+#            are the same things, however it could happen that a single RNA
+#            sample is sequenced through multiple runs (also referred to as
+#            'technical replicates').
+#   series:  (also referred to as 'project' (by ENA), 'study', or 'experiment')
+#            the set of all samples pertaining  to the same experimental design,
+#            across all conditions of interest to that particular scientific
+#            study. It can be referred to by the ENA accession
+#            `PRJ(E|D|N)[A-Z][0-9]+` or the corresponding `GSE[0-9]+` GEO
+#            accession ID.
+#   model:   a collection of studies (i.e., a set of series) from the same
+#            biological model.
+#
+# NOTE: since the ENA run accession is the only ID that is ensured to be unique
+#       on a per-file basis (even in the case of technical replicates), it is
+#       used here as the base reference for the construction of `bioSeries`
+#       class objects.
+#
+# Assumptions
+# ~~~~~~~~~~~
+# A number of (hopefully reasonable) assumptions upon file and data organization
+# are made for object construction to be successful:
+#
+# 1 - Each series (or study) is represented by two CSV or TSV files, namely the
+#     actual gene expression data (read counts) and related metadata for all the
+#     samples/runs making up the series.
+#
+# 2 - All series related to the same model are stored in the same directory,
+#     here referred to as the 'target directory' for bioModel construction, and
+#     each model lives in a separate target directory.
+#
+# 3 - Both data and metadata have file names starting with the same series
+#     accession ID (both GEO and ENA are fine), followed by an underscore (`_`)
+#     and either the distinctive string `CountMatrix` or `meta` (ignoring case)
+#     if they are counts or metadata, respectively. Any additional characters
+#     are allowed after this pattern, provided that the terminal file name
+#     extension is either CSV or TSV (again ignoring case). Examples of good
+#     file name patterns are:
 #
 #         GSE205739_CountMatrix_genes_TPM.tsv
-#         PRJNA847413_CountMatrix.csv
+#         PRJNA847413_countMATRIX.csv
 #         GSE76528_meta.csv
+#         PRJNA463482_metadata.csv
 #
-# 2 - Metadata files have proper column names as table header; among them only
+# . - Count tables have proper column names as header, among which a mandatory
+#     ID column matching the regex `gene.*id` or `transcript.*id` (usually being
+#     `gene_id` or `transcript_id`, respectively).
+#
+# . - Metadata files have proper column names as table header; among them only
 #     `ena_run` is mandatory, as the only ID that is certainly unique to each
 #     file.
 #
-# 3 - Count tables have proper column names as header, among which a mandatory
-#     ID column matching the regex "gene.*id" or "transcript.*id" (usually being
-#     "gene_id" or "transcript_id", respectively).
-#
-# 4 - In count table, the names of the columns containing the counts of each
+# . - In count table, the names of the columns containing the counts of each
 #     different run feature the corresponding `ena_run` ID (and possibly other
 #     text strings).
 #
+# IMPLEMENTATION NOTE
+# ~~~~~~~~~~~~~~~~~~~
+# To make the code lighter, anonymous functions defined in *apply or pipes are
+# NOT self-contained, but instead happily access variables from the outer scope.
 
-library(dplyr) # arrange, select
-library(rlang)  # Injection operator `!!`
-library(magrittr) #  for pipe assignment operator %<>% and Aliases
+
+
+# --- Package Dependencies -----------------------------------------------------
+
+library(dplyr)    # `arrange()`, `select()`
+library(rlang)    # Injection operator `!!`
+library(magrittr) # For pipe assignment operator %<>% and Aliases (equals())
+
+# --- Internal Functions -------------------------------------------------------
 
 # Automatically adapt to CSV or TSV format
 read.xsv <- function(file, header = TRUE) {
@@ -46,29 +101,33 @@ read.xsv <- function(file, header = TRUE) {
   }
 }
 
-# Define a new binary operator (with 2 aliases) to concatenate strings in pipe
+# A Java-style binary operator (with 2 aliases) to concatenate strings in pipe
 `%|+>%` <- `%+>%` <- `%+%` <- \(x,y)paste0(x,y)
 
-
-
-
+# Takes in a series ID (e.g., GSExxxxxx), a file list (actually a character
+# vector), and a vector of two patterns to match (one for the count matrix files
+# and the other for metadata).
+# Returns FALSE (i.e., do not skip that series) if both files of counts and
+# metadata are within the file list. Returns TRUE (i.e., skip that series)
+# otherwise.
 check_filenames <- function(series_ID, files, pattern) {
   
+  # Set "keep it" as default
   skip_this <- FALSE
   
   # Find file pair
   series_ID %+% "_" |> grep(files, value=T) -> run_pair
-  
+  # Check them
   if (length(run_pair) != 2) {
     "Wrong number of files in series " %+% series_ID %+% "... skip it!" |> warning()
     skip_this <- TRUE
-    
   } else {
-    # Check if one element matches 'count_pattern' AND the other matches
-    # 'meta_pattern', OR vice-versa. NOTE: the logic below may not seem
-    # immediately self-evident, but it's fast and, trust me (trust you), it
-    # works: 'sapply' returns an identity matrix iff condition is met. Try it.
-    sapply(pattern,\(rgx) grepl(rgx, run_pair, ignore.case=T)) |> equals(diag(2)) |> all() -> matching
+    # Check if the first `run_pair` element matches 'count' pattern AND the
+    # second one matches 'meta' pattern (remember files are sorted). NOTE: the
+    # logic below may not seem immediately self-evident, but it's fast and,
+    # trust me, it works: this 'sapply' will return an identity matrix iff
+    # condition is met. Try it.
+    sapply(pattern, grepl, run_pair, ignore.case=T) |> equals(diag(2)) |> all() -> matching
     if (not(matching)) {
       "Bad filename pair in series " %+% series_ID %+% "... skip it!" |> warning()
       skip_this <- TRUE
@@ -77,13 +136,7 @@ check_filenames <- function(series_ID, files, pattern) {
   return(skip_this)
 }
   
-  
-  
-  
-
-# To make code lighter, Anonymous  functions used in *apply or pipes are NOT self-contained
-# instead they may access variables from the outer scope
-
+# --- Constructors -------------------------------------------------------------
 
 new_bioSeries <- function(series_ID, target_dir = ".") {
 
@@ -119,15 +172,16 @@ new_bioSeries <- function(series_ID, target_dir = ".") {
   meta_df$ena_run |> paste(collapse = "|") |> grep(colnames(counts_df), invert=T) -> annot_index
   counts_df |> select(!!annot_index) |> list(annotation=_) |> append(series, values=_) -> series
   
-  # Make the `series` list an S3 object and return it
-  structure(series, class = "bioSeries")
+  # Make `series` an S3 object (inheriting from class 'list') and return it
+  structure(series, class = c("bioSeries", "list"))
 }
+
 
 
 
 new_bioModel <- function(target_dir = ".") {
 
-  # Get all file names inside target directory
+  # Get all file names within target directory
   list.files(path = target_dir, pattern = "\\.[ct]sv$") |> sort() -> files
   # Clean series IDs
   files |> sub("_.*$", "", x=_) |> sort() |> unique() -> series_IDs
@@ -146,13 +200,17 @@ new_bioModel <- function(target_dir = ".") {
   # Build up the bioModel object
   lapply(series_IDs, new_bioSeries, target_dir) |> setNames(series_IDs) -> base_list
   
-  # Make the base list an S3 object and return it
-  structure(base_list, class = "bioModel")
+  # Make `base_list` an S3 object (inheriting from class 'list') and return it
+  structure(base_list, class = c("bioModel", "list"))
 }
 
 
 
+# --- Generics -----------------------------------------------------------------
 
+
+
+# --- Methods ------------------------------------------------------------------
 
 countMatrix.bioSeries <- function(series, annot = FALSE) {
   # Find run elements
@@ -197,6 +255,19 @@ rowStats.bioSeries <- function(series, annot = FALSE) {
 rowStats.bioModel <- function(model) {
   
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
