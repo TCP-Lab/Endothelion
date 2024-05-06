@@ -264,15 +264,42 @@ rowStats.bioModel <- function(model) {
 
 
 
+# Here `logic` is an unquoted logical expression to be used as filter criterium.
+keepRuns.bioSeries <- function(series, logic) {
+  
+  # Capture `logic` expression for Non-Standard Evaluation
+  logic_call <- substitute(logic)
+  
+  # Find runs in `series` that match the `logic` condition
+  series |> sapply(function(element){
+    if(grepl("(E|D|S)RR[0-9]{6,}", element |> attr("own_name"))) {
+      # Evaluate captured expression in the proper environment
+      logic_call |> eval(envir = element)
+    } else {TRUE}
+  }) -> keep_these
+  # Restore attributes (subsetting drops all, except names, dim and dimnames)
+  # and return
+  series[keep_these] |> structure(class = c("bioModel", "list"))
+}
 
 
-
-
-
-
-
-
-
+# Here `logic` is a string, namely the double-quoted logical expression to be
+# used as filter criterium.
+# NOTE: this is an alternative backup version of the previous method, in case
+#       'substitute()' is not successfully processed in some particular settings.
+keepRuns2.bioSeries <- function(series, logic) {
+  
+  # Find runs in `series` that match the `logic` condition
+  series |> sapply(function(element){
+    if(grepl("(E|D|S)RR[0-9]{6,}", element |> attr("own_name"))) {
+      # Evaluate the string expression in the proper data environment
+      logic |> parse(text=_) |> eval() |> with(element, expr=_)
+    } else {TRUE}
+  }) -> keep_these
+  # Restore attributes (subsetting drops all, except names, dim and dimnames)
+  # and return
+  series[keep_these] |> structure(class = c("bioModel", "list"))
+}
 
 
 
