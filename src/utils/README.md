@@ -95,9 +95,9 @@ and the script will
 
 __NOTE 1:__
 Since some of the 5000 random genes could be already present among the GOIs, the
-final length of the count matrices cannot be predicted exactly. However, if
-using `set.seed(7)` at the beginning of the R script, the resulting count
-matrices will have 5501 rows.
+final length of the count matrices cannot be predicted exactly. However, a seed
+is set at the beginning of the R script (`set.seed(7)`) to ensure
+reproducibility.
 
 __NOTE 2:__
 When running the _hCMEC_D3_ pipeline using the test data set, namely
