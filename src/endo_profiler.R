@@ -78,7 +78,7 @@ if (! count_type %in% c("expected_count", "TPM", "FPKM")) {
 if (! threshold_adapt %in% c("true", "false")) {
   cat(error_msg,
       " Invalid \'threshold_adapt\' parameter \'", threshold_adapt, "\'.\n",
-      " It must be one of the two Bash logical values true or false.\n", sep = "")
+      " It must be one of the two Bash logical values true or false.\n", sep="")
   quit(status = 4)
 }
 
@@ -190,7 +190,7 @@ if (threshold_adapt == "true") {
 
 # Gene Set ---------------------------------------------------------------------
 
-# Load
+# Load the list of GOIs
 gois_file |> read.delim(header = FALSE) |> unlist() -> gois
 
 # NOTE

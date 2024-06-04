@@ -31,13 +31,22 @@
 # real value to be used as constant threshold in all the experiments.
 #
 
-# Packages ---------------------------------------------------------------------
+# --- Packages -----------------------------------------------------------------
 
 library(ggplot2)
 library(r4tcpl)
 # library(tidyr)
+# library(httr)
 
-# Input Loading-----------------------------------------------------------------
+# Ugly temporary solution while waiting to package the SeqLoader
+dest_file <- "./src/seq_loader.R"
+if (! file.exists(dest_file)) {
+  "https://raw.githubusercontent.com/TCP-Lab/SeqLoader/main/seq_loader.R?token=GHSAT0AAAAAACMPIXKIYKZQIHPQUSZLEVAKZS7CMHA" |>
+    httr::GET(httr::write_disk(dest_file, overwrite = TRUE)) -> download_status
+}
+source(dest_file)
+
+# --- Input Parsing ------------------------------------------------------------
 
 # General error message
 error_msg <- "\nERROR by endo_profiler_x.R\n"
@@ -46,35 +55,41 @@ error_msg <- "\nERROR by endo_profiler_x.R\n"
 if (length(commandArgs(trailingOnly = TRUE)) != 6) {
   cat(error_msg,
       "One or more arguments are missing. Usage:\n\n",
-      "Rscript endo_profiler.R <count_matrix> <count_type> \\\n",
+      "Rscript endo_profiler_x.R <in_path> <central_tendency> \\\n",
       "                        <threshold_adapt> <threshold_value> \\\n",
       "                        <GOIs> <out_dir>\n\n")
   quit(status = 1)
 }
 
 # Extract command-line arguments.
-count_file <- commandArgs(trailingOnly = TRUE)[1]
-
+target_dir <- commandArgs(trailingOnly = TRUE)[1]
+descriptive <- toupper(commandArgs(trailingOnly = TRUE)[2])
 threshold_adapt <- commandArgs(trailingOnly = TRUE)[3]
 threshold_value <- as.numeric(commandArgs(trailingOnly = TRUE)[4])
 gois_file <- commandArgs(trailingOnly = TRUE)[5]
 out_dir <- commandArgs(trailingOnly = TRUE)[6]
 
+# Check if the target directory exists
+if (! dir.exists(target_dir)) {
+  cat(error_msg,
+      " Directory \'", target_dir, "\' does not exist.\n", sep = "")
+  quit(status = 2)
+}
 
-# Check if the target directory exists and it's not empty
-# 
-#if (! file.exists(count_file)) {
-#  cat(error_msg,
-#      " File \'", count_file, "\' does not exist.\n", sep = "")
-#  quit(status = 2)
-#}
-
+# Check adaptive threshold logical flag
+if (! descriptive %in% c("MEAN", "MEDIAN", "NWMEAN")) {
+  cat(error_msg,
+      " Invalid \'descriptive\' parameter \'", descriptive, "\'.\n",
+      " It must be one of the central tendency metrics currently implemented",
+      " by SeqLoader.\n", sep = "")
+  quit(status = 3)
+}
 
 # Check adaptive threshold logical flag
 if (! threshold_adapt %in% c("true", "false")) {
   cat(error_msg,
       " Invalid \'threshold_adapt\' parameter \'", threshold_adapt, "\'.\n",
-      " It must be one of the two Bash logical values true or false.\n", sep = "")
+      " It must be one of the two Bash logical values true or false.\n", sep="")
   quit(status = 4)
 }
 
@@ -93,43 +108,30 @@ if (! file.exists(gois_file)) {
   quit(status = 6)
 }
 
+# --- Gene Set -----------------------------------------------------------------
 
-# Dirs & Bases -----------------------------------------------------------------
+# Load the list of GOIs
+gois_file |> read.delim(header = FALSE) -> gois
 
-# Retrieve the GEO ID from input file name
-count_file |> basename2() |> {\(x)strsplit(x,"_")[[1]][1]}() -> GEO_id
+# NOTE
+# Use 'r4tcpl::TGS' dataset to access the full transportome, or a subset of it,
+# e.g.:
+# gois <- r4tcpl::TGS$ICs
 
-out_subdir <- file.path(out_dir, GEO_id)
-# Set the output folder
-if (! dir.exists(out_subdir)) {
-  dir.create(out_subdir, recursive = TRUE)
-}
+# --- Load xModel --------------------------------------------------------------
 
-# Count Data -------------------------------------------------------------------
-
-# Load count matrix and check header
-count_file |> read.delim() -> ncounts
-if (!("gene_id" %in% colnames(ncounts) && "SYMBOL" %in% colnames(ncounts))) {
-  stop("\n Bad formatted count table... Stop executing.")
-}
-
-
-
-
-target_dir <- "E:\\UniTo Drive\\WORKS\\0010 - Ongoing\\Endothelion\\data\\in\\Lines\\hCMEC_D3"
+# Construct xModel from data
 model <- new_xModel(target_dir)
 
-series <- model$GSE138309
+# Select Runs and subset genes
+model |> pruneRuns() |> keepRuns("extra == 1") |>
+  subsetGenes("SYMBOL", gois) -> slim_model
 
 
 
 
 
 
-# Normalization check: sum(TPMs) == 10^6
-if (any(abs(totalCounts(series) - 1e6) > 5)) {
-  cat("\nWARNING:\n Bad TPM normalization... Check counts in matrix!\n")
-}
 
 # Threshold --------------------------------------------------------------------
 
@@ -193,42 +195,19 @@ if (threshold_adapt == "true") {
   thr <- threshold_value
 }
 
-# Gene Set ---------------------------------------------------------------------
 
-# Load
-gois_file |> read.delim(header = FALSE) |> unlist() -> gois
-
-# NOTE
-# Use 'r4tcpl::TGS' dataset to access the full transportome, or a subset of it,
-# e.g.:
-# gois <- r4tcpl::TGS$ICs
 
 # Intersection -----------------------------------------------------------------
 
 
 
-ncounts <- geneStats(series)
+ncounts <- geneStats(model$...)
+gois_ncounts <- geneStats(slim_model$...)
 
 
 
 
-# Explode the dataframe (collapsed by 'assembler.R' from x.FASTQ), then proceed
-# with row filtering (subsetting).
-tidyr::separate_rows(ncounts, SYMBOL, sep = ",") |> as.data.frame() |>
-  subset(SYMBOL %in% gois) -> gois_ncounts
 
-if (setdiff(gois, gois_ncounts$SYMBOL) |> length() > 0) {
-  cat("\nWARNING:\n Can't find these Genes of Interest in the Count Matrix:",
-      setdiff(gois, gois_ncounts$SYMBOL), sep = "\n  ")
-}
-
-if (dnues2(gois_ncounts$SYMBOL)[1] > 0) {
-  stop("\n Cannot handle duplicated gene symbols...")
-}
-
-# Possibly collapse duplicated Gene Symbols (keeping the most expressed)
-#DEGs <- DEGs[order(DEGs$adj_pval), ] ## from GOZER; to be adapted
-#DEGs <- DEGs[!duplicated(DEGs$GeneSymbol), ]
 
 # Statistics -------------------------------------------------------------------
 
@@ -338,3 +317,39 @@ for (name in names(gois_stats)) {
 # END --------------------------------------------------------------------------
 
 cat("\n", GEO_id, " is done!\n", sep = "")
+
+
+
+
+
+
+
+out_subdir <- file.path(out_dir, GEO_id)
+# Set the output folder
+if (! dir.exists(out_subdir)) {
+  dir.create(out_subdir, recursive = TRUE)
+}
+
+
+# Load count matrix and check header
+if (!("gene_id" %in% colnames(ncounts) && "SYMBOL" %in% colnames(ncounts))) {
+  stop("\n Bad formatted count table... Stop executing.")
+}
+
+
+# Normalization check: sum(TPMs) == 10^6
+if (any(abs(totalCounts(series) - 1e6) > 5)) {
+  cat("\nWARNING:\n Bad TPM normalization... Check counts in matrix!\n")
+}
+
+
+
+
+
+if (dnues2(gois_ncounts$SYMBOL)[1] > 0) {
+  stop("\n Cannot handle duplicated gene symbols...")
+}
+
+# Possibly collapse duplicated Gene Symbols (keeping the most expressed)
+#DEGs <- DEGs[order(DEGs$adj_pval), ] ## from GOZER; to be adapted
+#DEGs <- DEGs[!duplicated(DEGs$GeneSymbol), ]

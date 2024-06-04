@@ -16,4 +16,3 @@ blu=$'\e[1;34m' # Blue
 mag=$'\e[1;35m' # Magenta
 cya=$'\e[1;36m' # Cyan
 end=$'\e[0m'
-
