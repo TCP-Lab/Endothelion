@@ -41,10 +41,83 @@ library(r4tcpl)
 # Ugly temporary solution while waiting to package the SeqLoader
 dest_file <- "./src/seq_loader.R"
 if (! file.exists(dest_file)) {
-  "https://raw.githubusercontent.com/TCP-Lab/SeqLoader/main/seq_loader.R?token=GHSAT0AAAAAACMPIXKIYKZQIHPQUSZLEVAKZS7CMHA" |>
+  "https://raw.githubusercontent.com/TCP-Lab/SeqLoader/main/seq_loader.R?token=GHSAT0AAAAAACMPIXKJ2PBSG46UBUCT6I5CZS7UXBA" |>
     httr::GET(httr::write_disk(dest_file, overwrite = TRUE)) -> download_status
 }
 source(dest_file)
+
+# --- Function definition ------------------------------------------------------
+
+threshold <- function(series,
+                      threshold_adapt = FALSE,
+                      threshold_value = 1,
+                      out_subdir) {
+  
+  # Adaptive expression threshold
+  if (threshold_adapt == "true") {
+    
+    series_ID <- attr(series, "own_name")
+    
+    # Subset the numeric columns and take their log2
+    only_counts <- log2(countMatrix(series)[,-1] + 1)
+    
+    # Make box-plots of count distributions
+    savePlots(
+      \(){boxplot(only_counts)},
+      figure_Name = paste0(series_ID, "_boxplot"),
+      figure_Folder = out_subdir,
+      pdf_out = FALSE)
+    
+    # Find the expression threshold adaptively
+    # Filter the dataset keeping only those genes that are detected in the majority
+    # of the samples, compute their average expression, then use that distribution
+    # of mean log-counts to fit the GMM.
+    gmm <- GMM_divide(
+      rowMeans(only_counts)[rowSums(only_counts > 0) > N_selection(series)/2],
+      G = threshold_value)
+    
+    # Set the new expression threshold as the right-most decision boundary
+    thr <- gmm$boundary[threshold_value*(threshold_value-1)/2]
+    names(thr) <- NULL
+    
+    # Make density plots with GMM overlaid
+    savePlots(
+      \(){
+        # Density curves
+        count_density(only_counts,
+                      remove_zeros = TRUE,
+                      xlim = c(-1,10),
+                      titles = c(paste0("Kernel Density Plot\n", series_ID), ""),
+                      col = "gray20")
+        # Plot the GMM
+        for (i in 1:threshold_value) {
+          lines(gmm$x, gmm$components[,i], col = "dodgerblue")
+        }
+        lines(gmm$x, rowSums(gmm$components), col = "firebrick2")
+        # Plot the expression threshold
+        y_lim <- par("yaxp")[2]
+        lines(c(thr, thr), c(0, 1.5*y_lim), col = "darkslategray", lty = "dashed")
+        original_adj <- par("adj") # Store the original value of 'adj'
+        par(adj = 0) # Set text justification to left
+        text(x = thr + 0.3, y = 0.8*y_lim,
+             labels = paste("Decision Boundary =", round(thr, digits = 2)),
+             cex = 1.1)
+        par(adj = original_adj) # Restore the original 'adj' value
+      },
+      figure_Name = paste0(series_ID, "_threshold"),
+      figure_Folder = out_subdir)
+    
+    if (thr < 1) {
+      cat("\nWARNING:\n Adaptive threshold from GMM returned",
+          round(thr, digits = 2), "...been coerced to 1.\n")
+      thr <- 1
+    }
+    thr
+  } else {
+    # Fixed expression threshold (non-adaptive mode)
+    threshold_value
+  }
+}
 
 # --- Input Parsing ------------------------------------------------------------
 
@@ -123,6 +196,11 @@ gois_file |> read.delim(header = FALSE) -> gois
 # Construct xModel from data
 model <- new_xModel(target_dir)
 
+model |> lapply(threshold, "true", 3, out_dir) -> thr
+thr |> print()
+
+stop()
+
 # Select Runs and subset genes
 model |> pruneRuns() |> keepRuns("extra == 1") |>
   subsetGenes("SYMBOL", gois) -> slim_model
@@ -133,67 +211,7 @@ model |> pruneRuns() |> keepRuns("extra == 1") |>
 
 
 
-# Threshold --------------------------------------------------------------------
 
-# Adaptive expression threshold
-if (threshold_adapt == "true") {
-  # Subset the numeric columns and take their log2
-  only_counts <- log2(ncounts[,-1] + 1)
-  
-  # Make box-plots of count distributions
-  savePlots(
-    \(){boxplot(only_counts)},
-    figure_Name = paste0(GEO_id, "_boxplot"),
-    figure_Folder = out_subdir,
-    pdf_out = FALSE)
-  
-  # Find the expression threshold adaptively
-  # Filter the dataset keeping only those genes that are detected in the majority
-  # of the samples, compute their average expression, then use that distribution
-  # of mean log-counts to fit the GMM.
-  gmm <- GMM_divide(
-    rowMeans(only_counts)[rowSums(only_counts > 0) > sample_size/2],
-    G = threshold_value)
-  
-  # Set the new expression threshold as the right-most decision boundary
-  thr <- gmm$boundary[threshold_value*(threshold_value-1)/2]
-  
-  # Make density plots with GMM overlaid
-  savePlots(
-    \(){
-      # Density curves
-      count_density(only_counts,
-                    remove_zeros = TRUE,
-                    xlim = c(-1,10),
-                    titles = c(paste0("Kernel Density Plot\n", GEO_id), ""),
-                    col = "gray20")
-      # Plot the GMM
-      for (i in 1:threshold_value) {
-        lines(gmm$x, gmm$components[,i], col = "dodgerblue")
-      }
-      lines(gmm$x, rowSums(gmm$components), col = "firebrick2")
-      # Plot the expression threshold
-      y_lim <- par("yaxp")[2]
-      lines(c(thr, thr), c(0, 1.5*y_lim), col = "darkslategray", lty = "dashed")
-      original_adj <- par("adj") # Store the original value of 'adj'
-      par(adj = 0) # Set text justification to left
-      text(x = thr + 0.3, y = 0.8*y_lim,
-           labels = paste("Decision Boundary =", round(thr, digits = 2)),
-           cex = 1.1)
-      par(adj = original_adj) # Restore the original 'adj' value
-    },
-    figure_Name = paste0(GEO_id, "_threshold"),
-    figure_Folder = out_subdir)
-  
-  if (thr < 1) {
-    cat("\nWARNING:\n Adaptive threshold from GMM returned",
-        round(thr, digits = 2), "...been coerced to 1.")
-    thr <- 1
-  }
-} else {
-  # Fixed expression threshold (non-adaptive mode)
-  thr <- threshold_value
-}
 
 
 
