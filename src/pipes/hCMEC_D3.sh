@@ -18,7 +18,7 @@ echo -e "\n\e[1;35mSTARTING hCMEC-D3 PROFILING\e[0m"
 echo -e "\e[1;35m===========================\e[0m"
 # --- The pipeline starts here -------------------------------------------------
 
-# ICT absolute expression profiling in hCMEC-D3 cell line
+# ICT+ absolute expression profiling in hCMEC-D3 cell line
 echo -e "\n\e[1;32mSTEP 1 :: absolute expression profiling\e[0m"
 bash ./src/endo_profiler_wrap.sh "./data/in/Lines/hCMEC_D3/"
 

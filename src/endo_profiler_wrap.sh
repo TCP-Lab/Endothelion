@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # ==============================================================================
-# This endo_profiler Bash wrapper is invoked to parse the `runtime_options` JSON
-# file and get the user-defined parameter values set therein. Then, it searches
-# the input directory (including possible subfolders) for all the available TSV
-# count matrices, which will be sequentially fed to the related R script for
-# actual data analysis. The last parameter of `endo_profiler.R` (i.e., the
+# This Bash wrapper is invoked to parse the `runtime_options` JSON file and get
+# the user-defined parameter values set therein. Then, it searches the input
+# directory (including possible subfolders) for all the available TSV count
+# matrices, which will be sequentially fed to the associated R script for actual
+# data analysis. Note that the last parameter of `endo_profiler.R` (i.e., the
 # output directory) is not retrieved from the JSON option file. On the contrary
 # it is hard-coded by the wrapper so as to recreate within the `./data/out`
 # directory (as per Kerblam! standard), a filesystem closely tracing the one
@@ -25,7 +25,7 @@ grn=$'\e[1;32m' # Green
 yel=$'\e[1;33m' # Yellow
 end=$'\e[0m'
 
-# Set the input path, depending on the pipeline that is running
+# Set the input path (based on which pipeline is running)
 in_path="$1"
 count_type="TPM"
 

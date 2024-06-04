@@ -18,7 +18,7 @@ echo -e "\n\e[1;35mSTARTING MASTER PROFILING\e[0m\n"
 echo -e "\e[1;35m=========================\e[0m"
 # --- The pipeline starts here -------------------------------------------------
 
-# ICT absolute expression profiling in all endo-models
+# ICT+ absolute expression profiling in all endo-models
 echo -e "\n\e[1;32mSTEP 1 :: absolute expression profiling\e[0m"
 bash ./src/endo_profiler_wrap.sh "./data/in/"
 

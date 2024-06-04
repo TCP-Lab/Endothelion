@@ -2,11 +2,10 @@
 
 # Endothelion Project
 #
-# Assumptions and format of expected arguments.
+# Assumptions and format the of expected arguments.
 #
 # Count matrices are assumed to be the end product of the sequential application
-# of the different modules from the x.FASTQ framework. In particular, counts are
-# supposed to be
+# of many x.FASTQ modules. In particular, counts are supposed to be
 #  - already normalized (ncounts), the normalization metric being the trailing
 #    part of each sample name used for column heading;
 #  - expressed in linear scale (not yet log-transformed);
