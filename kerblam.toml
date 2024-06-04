@@ -1,5 +1,5 @@
 [meta]
-version = "1.0.0-rc.1"
+version = "1.0.0-rc.2"
 
 [data.profiles.test]
 "Lines/hCMEC_D3/GSE138309_CountMatrix_genes_TPM.tsv" = "Lines/hCMEC_D3/test_GSE138309_CountMatrix_genes_TPM.tsv"
