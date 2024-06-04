@@ -9,12 +9,8 @@
 #? the S3 xSeries and xModel classes in R.
 # ==============================================================================
 
-# For a friendlier use of colors in Bash
-red=$'\e[1;31m' # Red
-grn=$'\e[1;32m' # Green
-yel=$'\e[1;33m' # Yellow
-end=$'\e[0m'
-
+# General settings and variables 
+source ./src/commons.sh
 
 # Set variables from runtime option JSON file
 OPTS="./data/in/runtime_options.json"
@@ -22,8 +18,8 @@ GOIs="$(cat $OPTS | jq -r ".GOIs")"
 threshold_adapt="$(cat $OPTS | jq -r ".threshold_adapt")"
 threshold_value="$(cat $OPTS | jq -r ".threshold_value")"
 
-echo -e "\n\e[1;35mSTARTING hCMEC-D3 PROFILING\e[0m"
-echo -e "\e[1;35m===========================\e[0m"
+echo -e "\n${mag}STARTING hCMEC-D3 PROFILING${end}"
+echo -e "${mag}===========================${end}"
 # --- The pipeline starts here -------------------------------------------------
 
 # Set the input path (based on which pipeline is running)
@@ -31,7 +27,7 @@ in_path="./data/in/Lines/hCMEC_D3/"
 
 
 # ICT+ absolute expression profiling in hCMEC-D3 cell line
-echo -e "\n\e[1;32mSTEP 1 :: absolute expression profiling\e[0m"
+echo -e "\n${grn}STEP 1 :: absolute expression profiling${end}"
 
 echo "----------------------------------------------------"
 echo "${yel}Analyzing file ${counter}/${files_found}:${end}"
@@ -46,7 +42,7 @@ Rscript "./src/endo_profiler_x.R" \
 
 # --- The pipeline ends here ---------------------------------------------------
 if [[ $? -eq 0 ]]; then
-	echo -e "\e[1;32mPIPELINE COMPLETED SUCCESSFULLY\e[0m\n"
+	echo -e "${grn}PIPELINE COMPLETED SUCCESSFULLY${end}\n"
 else
-	echo -e "\e[1;31m\nPIPELINE FAILED\e[0m\n"
+	echo -e "${red}\nPIPELINE FAILED${end}\n"
 fi

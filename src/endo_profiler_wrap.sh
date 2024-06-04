@@ -14,16 +14,8 @@
 
 # --- General settings and variables -------------------------------------------
 
-# The so-called strict mode (see https://mywiki.wooledge.org/BashFAQ/105)
-set -e           # "exit-on-error" shell option
-set -u           # "no-unset" shell option
-set -o pipefail  # exit on within-pipe error
-
-# For a friendlier use of colors in Bash
-red=$'\e[1;31m' # Red
-grn=$'\e[1;32m' # Green
-yel=$'\e[1;33m' # Yellow
-end=$'\e[0m'
+# General settings and variables 
+source ./src/commons.sh
 
 # Set the input path (based on which pipeline is running)
 in_path="$1"

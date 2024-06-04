@@ -14,21 +14,24 @@
 #? be found in the header of the R script file `./src/endo_profiler.R`.
 # ==============================================================================
 
-echo -e "\n\e[1;35mSTARTING MASTER PROFILING\e[0m\n"
-echo -e "\e[1;35m=========================\e[0m"
+# General settings and variables 
+source ./src/commons.sh
+
+echo -e "\n${mag}STARTING MASTER PROFILING${end}\n"
+echo -e "${mag}=========================${end}"
 # --- The pipeline starts here -------------------------------------------------
 
 # ICT+ absolute expression profiling in all endo-models
-echo -e "\n\e[1;32mSTEP 1 :: absolute expression profiling\e[0m"
+echo -e "\n${grn}STEP 1 :: absolute expression profiling${end}"
 bash ./src/endo_profiler_wrap.sh "./data/in/"
 
 # Cross-study statistics from functional gene sets in all endo-models
-echo -e "\n\e[1;32mSTEP 2 :: cross-study statistics\e[0m"
+echo -e "\n${grn}STEP 2 :: cross-study statistics${end}"
 bash ./src/endo_function_wrap.sh "./data/out/"
 
 # --- The pipeline ends here ---------------------------------------------------
 if [[ $? -eq 0 ]]; then
-	echo -e "\e[1;32mPIPELINE COMPLETED SUCCESSFULLY\e[0m\n"
+	echo -e "${grn}PIPELINE COMPLETED SUCCESSFULLY${end}\n"
 else
-	echo -e "\e[1;31m\nPIPELINE FAILED\e[0m\n"
+	echo -e "${red}\nPIPELINE FAILED${end}\n"
 fi
