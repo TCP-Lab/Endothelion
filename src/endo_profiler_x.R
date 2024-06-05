@@ -4,19 +4,12 @@
 #
 # Assumptions and format the of expected arguments.
 #
-# Count matrices are assumed to be the end product of the sequential application
-# of many x.FASTQ modules. In particular, counts are supposed to be
-#  - already normalized (ncounts), the normalization metric being the trailing
-#    part of each sample name used for column heading;
-#  - expressed in linear scale (not yet log-transformed);
-#  - provided with ENSG IDs ('gene_id' column);
+# This new version of 'endo_profiler' leverages S3 xSeries and xModel classes as
+# provided by the SeqLoader package (https://github.com/TCP-Lab/SeqLoader). For
+# this reason the formal requirements on data are the same of SeqLoader, the
+# only additions being that counts are supposed to be
+#  - already normalized in TPM;
 #  - provided with gene symbol annotation ('SYMBOL' column);
-#
-# In addition, the files containing the count matrices are supposed to be
-#  - saved in TSV format;
-#  - named according to the following pattern:
-#           <SeriesID>_CountMatrix_<level>_<metric>.tsv 
-#    E.g.,  GSE138309_CountMatrix_genes_TPM.tsv
 #
 # GOIs are assumed to be listed as plain gene symbols, arranged in a single
 # column (CSV or TSV) with no header.
@@ -34,90 +27,17 @@
 # --- Packages -----------------------------------------------------------------
 
 library(ggplot2)
-library(r4tcpl)
+# library(r4tcpl)
 # library(tidyr)
 # library(httr)
 
 # Ugly temporary solution while waiting to package the SeqLoader
 dest_file <- "./src/seq_loader.R"
 if (! file.exists(dest_file)) {
-  "https://raw.githubusercontent.com/TCP-Lab/SeqLoader/main/seq_loader.R?token=GHSAT0AAAAAACMPIXKJ2PBSG46UBUCT6I5CZS7UXBA" |>
+  "https://raw.githubusercontent.com/TCP-Lab/SeqLoader/main/seq_loader.R" |>
     httr::GET(httr::write_disk(dest_file, overwrite = TRUE)) -> download_status
 }
 source(dest_file)
-
-# --- Function definition ------------------------------------------------------
-
-threshold <- function(series,
-                      threshold_adapt = FALSE,
-                      threshold_value = 1,
-                      out_subdir) {
-  
-  # Adaptive expression threshold
-  if (threshold_adapt == "true") {
-    
-    series_ID <- attr(series, "own_name")
-    
-    # Subset the numeric columns and take their log2
-    only_counts <- log2(countMatrix(series)[,-1] + 1)
-    
-    # Make box-plots of count distributions
-    savePlots(
-      \(){boxplot(only_counts)},
-      figure_Name = paste0(series_ID, "_boxplot"),
-      figure_Folder = out_subdir,
-      pdf_out = FALSE)
-    
-    # Find the expression threshold adaptively
-    # Filter the dataset keeping only those genes that are detected in the majority
-    # of the samples, compute their average expression, then use that distribution
-    # of mean log-counts to fit the GMM.
-    gmm <- GMM_divide(
-      rowMeans(only_counts)[rowSums(only_counts > 0) > N_selection(series)/2],
-      G = threshold_value)
-    
-    # Set the new expression threshold as the right-most decision boundary
-    thr <- gmm$boundary[threshold_value*(threshold_value-1)/2]
-    names(thr) <- NULL
-    
-    # Make density plots with GMM overlaid
-    savePlots(
-      \(){
-        # Density curves
-        count_density(only_counts,
-                      remove_zeros = TRUE,
-                      xlim = c(-1,10),
-                      titles = c(paste0("Kernel Density Plot\n", series_ID), ""),
-                      col = "gray20")
-        # Plot the GMM
-        for (i in 1:threshold_value) {
-          lines(gmm$x, gmm$components[,i], col = "dodgerblue")
-        }
-        lines(gmm$x, rowSums(gmm$components), col = "firebrick2")
-        # Plot the expression threshold
-        y_lim <- par("yaxp")[2]
-        lines(c(thr, thr), c(0, 1.5*y_lim), col = "darkslategray", lty = "dashed")
-        original_adj <- par("adj") # Store the original value of 'adj'
-        par(adj = 0) # Set text justification to left
-        text(x = thr + 0.3, y = 0.8*y_lim,
-             labels = paste("Decision Boundary =", round(thr, digits = 2)),
-             cex = 1.1)
-        par(adj = original_adj) # Restore the original 'adj' value
-      },
-      figure_Name = paste0(series_ID, "_threshold"),
-      figure_Folder = out_subdir)
-    
-    if (thr < 1) {
-      cat("\nWARNING:\n Adaptive threshold from GMM returned",
-          round(thr, digits = 2), "...been coerced to 1.\n")
-      thr <- 1
-    }
-    thr
-  } else {
-    # Fixed expression threshold (non-adaptive mode)
-    threshold_value
-  }
-}
 
 # --- Input Parsing ------------------------------------------------------------
 
@@ -181,6 +101,95 @@ if (! file.exists(gois_file)) {
   quit(status = 6)
 }
 
+# --- Load xModel --------------------------------------------------------------
+
+# Construct xModel from data
+model <- new_xModel(target_dir)
+
+# --- Threshold ----------------------------------------------------------------
+
+threshold <- function(xSeries,
+                      adapt = threshold_adapt,
+                      thr_val = threshold_value,
+                      out_folder = out_dir) {
+  # Adaptive expression threshold
+  if (adapt == "true") {
+    # Get series_ID
+    series_ID <- attr(xSeries, "own_name")
+    # Take the log2 of counts
+    only_counts <- log2(countMatrix(xSeries)[,-1] + 1)
+    # Make box-plots of count distributions
+    r4tcpl::savePlots(
+      \(){boxplot(only_counts)},
+      figure_Name = paste0(series_ID, "_boxplot"),
+      figure_Folder = file.path(out_folder, series_ID),
+      pdf_out = FALSE)
+    # Find the expression threshold adaptively
+    # Filter the dataset by keeping only those genes that are detected in the
+    # majority of the samples, compute their average expression, then use that
+    # distribution of mean log-counts to fit the GMM.
+    gmm <- r4tcpl::GMM_divide(
+      rowMeans(only_counts)[rowSums(only_counts > 0) > N_selection(xSeries)/2],
+      G = thr_val)
+    # Set the new expression threshold as the right-most decision boundary
+    gmm$boundary[thr_val*(thr_val-1)/2] |> unname() -> thr
+    # Make density plots with GMM overlaid
+    r4tcpl::savePlots(
+      \(){
+        # Density curves
+        r4tcpl::count_density(only_counts,
+                              remove_zeros = TRUE,
+                              xlim = c(-1,10),
+                              col = "gray20",
+                              titles = c(paste0("Kernel Density Plot\n",
+                                                series_ID), ""))
+        # Plot the GMM
+        for (i in 1:thr_val) {
+          lines(gmm$x, gmm$components[,i], col="dodgerblue")
+        }
+        lines(gmm$x, rowSums(gmm$components), col="firebrick2")
+        # Plot the expression threshold
+        y_lim <- par("yaxp")[2]
+        lines(c(thr, thr), c(0, 1.5*y_lim), col="darkslategray", lty="dashed")
+        original_adj <- par("adj") # Store the original value of 'adj'
+        par(adj = 0) # Set text justification to left
+        text(x = thr + 0.3, y = 0.8*y_lim,
+             labels = paste("Decision Boundary =", round(thr, digits = 2)),
+             cex = 1.1)
+        par(adj = original_adj) # Restore the original 'adj' value
+      },
+      figure_Name = paste0(series_ID, "_threshold"),
+      figure_Folder = file.path(out_folder, series_ID))
+    # Reject threshold if too low (to be conservative)
+    if (thr < 1) {
+      cat("\nWARNING:\n Adaptive threshold from GMM returned",
+          round(thr, digits = 2), "...been coerced to 1.\n")
+      thr <- 1
+    }
+  } else {
+    # Fixed expression threshold (non-adaptive mode)
+    thr <- thr_val
+  }
+  return(thr)
+}
+
+# Compute threshold
+model |> lapply(threshold) -> thr
+
+
+
+
+
+
+cat("\n")
+thr |> print()
+
+"Fino qui" |> stop()
+
+
+
+
+
 # --- Gene Set -----------------------------------------------------------------
 
 # Load the list of GOIs
@@ -190,16 +199,6 @@ gois_file |> read.delim(header = FALSE) -> gois
 # Use 'r4tcpl::TGS' dataset to access the full transportome, or a subset of it,
 # e.g.:
 # gois <- r4tcpl::TGS$ICs
-
-# --- Load xModel --------------------------------------------------------------
-
-# Construct xModel from data
-model <- new_xModel(target_dir)
-
-model |> lapply(threshold, "true", 3, out_dir) -> thr
-thr |> print()
-
-stop()
 
 # Select Runs and subset genes
 model |> pruneRuns() |> keepRuns("extra == 1") |>
@@ -325,7 +324,7 @@ for (name in names(gois_stats)) {
                linewidth = 1)
   
   # Save the Chart
-  savePlots(
+  r4tcpl::savePlots(
     \(){print(gg_thr)},
     width_px = 2000,
     figure_Name = paste0(GEO_id, "_log2", count_type, "_", name, "_chart"),
