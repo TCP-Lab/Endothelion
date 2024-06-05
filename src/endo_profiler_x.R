@@ -37,7 +37,7 @@ if (! file.exists(dest_file)) {
   "https://raw.githubusercontent.com/TCP-Lab/SeqLoader/main/seq_loader.R" |>
     httr::GET(httr::write_disk(dest_file, overwrite = TRUE)) -> download_status
 }
-source(dest_file)
+source(dest_file) |> suppressMessages()
 
 # --- Input Parsing ------------------------------------------------------------
 
