@@ -27,7 +27,6 @@ echo -e "${mag}===========================${end}"
 in_path="./data/in/Lines/hCMEC_D3/"
 
 # ICT+ absolute expression profiling in hCMEC-D3 cell line
-echo -e "\n${grn}STEP 1 :: absolute expression profiling${end}"
 Rscript "./src/endo_profiler_x.R" \
 	"$in_path" \
 	"$central_tendency" \

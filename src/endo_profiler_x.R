@@ -39,6 +39,28 @@ if (! file.exists(dest_file)) {
 }
 source(dest_file) |> suppressMessages()
 
+# Colored echo for on-screen log in Bash CLI
+echo <- function(text, color = "white") {
+  # Check the operating system
+  os_type <- Sys.info()["sysname"]
+  if (os_type == "Windows") {
+    warning("Colored echo is just for Bash!")
+    cat(text)
+  } else if (os_type == "Linux") {
+    if      (color == "red")     {col <- "\\e[1;31m"}
+    else if (color == "green")   {col <- "\\e[1;32m"}
+    else if (color == "yellow")  {col <- "\\e[1;33m"}
+    else if (color == "blue")    {col <- "\\e[1;34m"}
+    else if (color == "magenta") {col <- "\\e[1;35m"}
+    else if (color == "cyan")    {col <- "\\e[1;36m"}
+    else if (color == "white")   {col <- "\\e[1;37m"}
+    end <- "\\e[0m"
+    system2("echo", args = c("-e", paste0("\"", col, text, end, "\"")))
+  } else {
+    stop("Running on an unknown OS\n")
+  }
+}
+
 # --- Input Parsing ------------------------------------------------------------
 
 # General error message
@@ -104,18 +126,33 @@ if (! file.exists(gois_file)) {
 # --- Load xModel --------------------------------------------------------------
 
 # Construct xModel from data
+echo("\nSTEP 1 :: xModel loading", "green")
+
 model <- new_xModel(target_dir)
+
+cat("\nxModel", basename(target_dir), "containing", length(model), "xSeries:\n")
+model |> sapply(\(series) {
+    cat(" -", attr(series, "own_name"),
+        "[", N_series(series), " Runs -", N_genome(series), "genes ]\n")
+  }) -> no_use
+cat("Source:", target_dir, "\n")
 
 # --- Threshold ----------------------------------------------------------------
 
 threshold <- function(xSeries,
+                      all_names,
                       adapt = threshold_adapt,
                       thr_val = threshold_value,
-                      out_folder = out_dir) {
+                      out_folder = out_dir)
+{
+  # Get series_ID and counter
+  series_ID <- attr(xSeries, "own_name")
+  item <- which(all_names == series_ID)
+  position <- paste0("[", item, "/", length(all_names), "]")
+  echo(paste("\nxSeries", position, series_ID), "yellow")
+  
   # Adaptive expression threshold
   if (adapt == "true") {
-    # Get series_ID
-    series_ID <- attr(xSeries, "own_name")
     # Take the log2 of counts
     only_counts <- log2(countMatrix(xSeries)[,-1] + 1)
     # Make box-plots of count distributions
@@ -165,7 +202,7 @@ threshold <- function(xSeries,
       cat("\nWARNING:\n Adaptive threshold from GMM returned",
           round(thr, digits = 2), "...been coerced to 1.\n")
       thr <- 1
-    }
+    } else {cat("\nAdaptive expression threshold set to: thr =", thr, "\n")}
   } else {
     # Fixed expression threshold (non-adaptive mode)
     thr <- thr_val
@@ -174,7 +211,30 @@ threshold <- function(xSeries,
 }
 
 # Compute threshold
-model |> lapply(threshold) -> thr
+echo("\nSTEP 2 :: threshold computation", "green")
+
+model |> lapply(threshold, names(model)) -> thr
+
+# --- Gene Set -----------------------------------------------------------------
+
+echo("\nSTEP 3 :: GOI extraction", "green")
+
+# Load the list of GOIs
+# NOTE: use 'r4tcpl::TGS' to access the full transportome, or a subset of it!
+gois_file |> read.delim(header = FALSE) -> gois
+
+cat("\nLoaded a list of", nrow(gois), "GOIs\nSource:", gois_file, "\n")
+
+# Select Runs and subset genes
+model |> pruneRuns() |> keepRuns("extra == 1") |>
+  subsetGenes("SYMBOL", gois) -> slim_model
+
+cat("\nslim xModel", basename(target_dir), "containing",
+    length(slim_model), "xSeries:\n")
+slim_model |> sapply(\(series) {
+  cat(" -", attr(series, "own_name"),
+      "[", N_series(series), " Runs -", N_genome(series), "genes ]\n")
+}) -> no_use
 
 
 
@@ -187,29 +247,7 @@ thr |> print()
 "Fino qui" |> stop()
 
 
-
-
-
-# --- Gene Set -----------------------------------------------------------------
-
-# Load the list of GOIs
-gois_file |> read.delim(header = FALSE) -> gois
-
-# NOTE
-# Use 'r4tcpl::TGS' dataset to access the full transportome, or a subset of it,
-# e.g.:
-# gois <- r4tcpl::TGS$ICs
-
-# Select Runs and subset genes
-model |> pruneRuns() |> keepRuns("extra == 1") |>
-  subsetGenes("SYMBOL", gois) -> slim_model
-
-
-
-
-
-
-
+echo("STEP 3 :: absolute expression profiling", "green")
 
 
 
