@@ -130,11 +130,7 @@ echo("\nSTEP 1 :: xModel loading", "green")
 
 model <- new_xModel(target_dir)
 
-cat("\nxModel", basename(target_dir), "containing", length(model), "xSeries:\n")
-model |> sapply(\(series) {
-    cat(" -", attr(series, "own_name"),
-        "[", N_series(series), " Runs -", N_genome(series), "genes ]\n")
-  }) -> no_use
+factTable(model)
 cat("Source:", target_dir, "\n")
 
 # --- Threshold ----------------------------------------------------------------
@@ -229,12 +225,15 @@ cat("\nLoaded a list of", nrow(gois), "GOIs\nSource:", gois_file, "\n")
 model |> pruneRuns() |> keepRuns("extra == 1") |>
   subsetGenes("SYMBOL", gois) -> slim_model
 
-cat("\nslim xModel", basename(target_dir), "containing",
-    length(slim_model), "xSeries:\n")
-slim_model |> sapply(\(series) {
-  cat(" -", attr(series, "own_name"),
-      "[", N_series(series), " Runs -", N_genome(series), "genes ]\n")
-}) -> no_use
+factTable(slim_model)
+
+
+
+
+
+
+
+
 
 
 
