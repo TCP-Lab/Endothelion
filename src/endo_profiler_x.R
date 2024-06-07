@@ -122,7 +122,7 @@ echo("\nSTEP 2 :: threshold computation", "green")
 
 model |> lapply(threshold, names(model)) -> thr
 
-# --- Gene Set -----------------------------------------------------------------
+# --- GeneSet Intersection -----------------------------------------------------
 
 # Intersect with GOIs
 echo("\nSTEP 3 :: GOI extraction", "green")
@@ -131,7 +131,8 @@ echo("\nSTEP 3 :: GOI extraction", "green")
 # NOTE: use 'r4tcpl::TGS' to access the full transportome, or a subset of it!
 gois_file |> read.delim(header = FALSE) -> gois
 
-cat("\nSource:", gois_file, "\nLoaded a list of", nrow(gois), "GOIs\n")
+echo("\nGenes of Interest", "yellow")
+cat("Source:", gois_file, "\nLoaded a list of", nrow(gois), "GOIs\n")
 
 # Select Runs and subset genes
 model |> pruneRuns() |> keepRuns("extra == 1") |>
@@ -140,7 +141,15 @@ model |> pruneRuns() |> keepRuns("extra == 1") |>
 echo("\nSlim model facts", "yellow")
 factTable(slim_model)
 
-
+# Save series-specific stats as CSV
+slim_model |> lapply(\(series) {
+  series_ID <-  attr(series, "own_name")
+  series |> geneStats(annot = TRUE) |>
+    write.csv(file.path(out_dir, series_ID,
+                        paste0(series_ID, "_profileReport.csv")),
+              row.names = FALSE)
+})
+  
 
 
 
@@ -159,33 +168,7 @@ thr |> print()
 "Fino qui" |> stop()
 
 
-echo("STEP 3 :: absolute expression profiling", "green")
 
-
-
-
-# Intersection -----------------------------------------------------------------
-
-
-
-ncounts <- geneStats(model$...)
-gois_ncounts <- geneStats(slim_model$...)
-
-
-
-
-
-
-# Statistics -------------------------------------------------------------------
-
-
-gois_all_stats <- ncounts
-  
-# Saving as CSV
-write.csv(gois_all_stats,
-          file.path(out_subdir,
-                    paste0(GEO_id, "_log2", count_type, "_profileReport.csv")),
-          row.names = FALSE)
 
 # Only expressed GOIs
 gois_all_stats |> subset(Mean > thr) -> gois_high_stats
