@@ -22,6 +22,18 @@ echo <- function(text, color = "white") {
   }
 }
 
+# Borrowed from SeqLoader
+# Any named list knows the names of all the elements it contains (under its
+# 'names' attribute), but it doesn't know its own (even when it has one, e.g.,
+# because it is itself an element of a named list)! So, this function sets as
+# attribute for each element of a named list its own name (to access it later).
+set_own_names <- function(parent_list) {
+  names(parent_list) |> lapply(function(element_name) {
+    attr(parent_list[[element_name]], "own_name") <- element_name
+    return(parent_list[[element_name]])
+  }) |> setNames(names(parent_list)) # Also keep original names in parent list
+}
+
 # Compute threshold from cont distribution
 threshold <- function(xSeries,
                       all_names,
@@ -93,6 +105,82 @@ threshold <- function(xSeries,
   }
   return(thr)
 }
+
+
+
+
+
+# 'gois_stats' is supposed to be a data.frame with (at least) a gene
+# annotation column with gene symbols (called SYMBOL), descriptive statistics
+# about expression, and the  "own_name" attribute of the associated series.
+plot_barChart <- function(gois_stats, family_name, y_limit, border = FALSE, thr, out_folder = out_dir) {
+  
+  # Colors
+  line_color <- "gray17"
+  err_color <- "gray17"
+  
+  # Get series_ID
+  gois_stats |> attr("own_name") -> series_ID
+  
+  # Prepare the Frame
+  gg_frame <-
+    ggplot(data = gois_stats,
+           aes(x = SYMBOL, y = Mean, fill = SYMBOL)) +
+    theme_bw(base_size = 15, base_rect_size = 1.5) +
+    theme(axis.text.x = element_text(size = 10, angle = 90,
+                                     vjust = 0.5, hjust = 1),
+          axis.text.y = element_text(size = 14),
+          axis.title = element_text(size = 14),
+          legend.position = "none") +
+    scale_y_continuous(expand = c(0.01, 0.02),
+                       breaks = seq(0, y_limit, 0.5)) +
+    xlab("Genes of Interest") +
+    ylab(substitute(log[2]*(x+1), list(x = "TPM"))) +
+    ggtitle(label = paste0(series_ID, " (n = ...??...)"))
+  
+  # Draw the Bars
+  if (border) {
+    gg_bars <- geom_bar(stat = "identity", width = 0.7,
+                        color = line_color, linewidth = 0.1)
+  } else {
+    gg_bars <- geom_bar(stat = "identity", width = 0.75)
+  }
+  gg_errorbar <- gg_frame + gg_bars +
+    geom_errorbar(aes(ymin = Mean - Std_Dev,
+                      ymax = Mean + Std_Dev),
+                  linewidth = 1.0, width = 0.5, color = err_color)
+  
+  # Add the Expression Threshold
+  gg_thr <- gg_errorbar +
+    geom_hline(yintercept = thr[[series_ID]],
+               linetype = "dashed",
+               color = line_color,
+               linewidth = 1)
+  
+  # Save the Chart
+  r4tcpl::savePlots(
+    \(){print(gg_thr)},
+    width_px = 2000,
+    figure_Name = paste0(series_ID, "_", family_name, "_chart"),
+    figure_Folder = file.path(out_folder, series_ID))
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

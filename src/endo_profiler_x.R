@@ -15,7 +15,7 @@
 # column (CSV or TSV) with no header.
 #
 # When `threshold_adapt == "true"`, a GMM is used to find the expression
-# threshold as the  decision boundary separating the two sub-populations of
+# threshold as the decision boundary separating the two sub-populations of
 # expressed and unexpressed genes. In this case, the integer entered as the
 # `threshold_value` indicates the number of Gaussian components to be used in
 # the mixture for the adaptive calculation of the expression threshold (thr). If
@@ -27,7 +27,7 @@
 # --- Packages -----------------------------------------------------------------
 
 library(ggplot2)
-# library(r4tcpl)
+library(r4tcpl)
 # library(tidyr)
 # library(httr)
 
@@ -104,7 +104,7 @@ if (! file.exists(gois_file)) {
   quit(status = 6)
 }
 
-# --- Load xModel --------------------------------------------------------------
+# --- xModel Loading -----------------------------------------------------------
 
 # Construct xModel from data
 echo("\nSTEP 1 :: xModel loading", "green")
@@ -115,7 +115,7 @@ model <- new_xModel(target_dir)
 
 factTable(model)
 
-# --- Threshold ----------------------------------------------------------------
+# --- Thresholding -------------------------------------------------------------
 
 # Compute threshold
 echo("\nSTEP 2 :: threshold computation", "green")
@@ -141,37 +141,22 @@ model |> pruneRuns() |> keepRuns("extra == 1") |>
 echo("\nSlim model facts", "yellow")
 factTable(slim_model)
 
-# Save series-specific stats as CSV
+# Get series-specific stats for all GOIs and save as CSV
 slim_model |> lapply(\(series) {
-  series_ID <-  attr(series, "own_name")
-  series |> geneStats(annot = TRUE) |>
-    write.csv(file.path(out_dir, series_ID,
-                        paste0(series_ID, "_profileReport.csv")),
-              row.names = FALSE)
-})
-  
-
-
-
-
-
-
-
-
-
-
-
-
-cat("\n")
-thr |> print()
-
-"Fino qui" |> stop()
-
-
-
+  series_ID <- attr(series, "own_name")
+  series |> geneStats(annot = TRUE) -> all_gois_stats
+  write.csv(all_gois_stats,
+            file.path(out_dir, series_ID,
+                      paste0(series_ID, "_profileReport.csv")),
+            row.names = FALSE)
+  return(all_gois_stats)
+}) |> set_own_names() -> all_gois_stats
 
 # Only expressed GOIs
-gois_all_stats |> subset(Mean > thr) -> gois_high_stats
+all_gois_stats |> names() |>
+  sapply(\(series_name) {
+    all_gois_stats[[series_name]] |> subset(Mean > thr[[series_name]])
+  }, simplify = FALSE, USE.NAMES = TRUE) |> set_own_names() -> high_gois_stats
 
 # A (temporary) patch for the TGS dataset from r4tcpl v.1.5.1
 patch4TGS <- c("MCUB",
@@ -187,82 +172,46 @@ ICs <- c(TGS$ICs, patch4TGS)
 trans <- TGS$trans
 
 # Only expressed ICTs
-gois_high_stats |> subset(Symbol %in% c(ICs, trans)) -> ICT_high_stats
-
+high_gois_stats |>
+  lapply(subset, SYMBOL %in% c(ICs, trans)) |>
+  set_own_names() -> high_ICT_stats
 # Only expressed ICs
-gois_high_stats |> subset(Symbol %in% ICs) -> IC_high_stats
-
+high_gois_stats |>
+  lapply(subset, SYMBOL %in% ICs) |>
+  set_own_names() -> high_IC_stats
 # Only expressed transporters
-gois_high_stats |> subset(Symbol %in% trans) -> trans_high_stats
-
+high_gois_stats |>
+  lapply(subset, SYMBOL %in% trans) |>
+  set_own_names() -> high_trans_stats
 # Only expressed receptors (GPCRs and RTKs)
-gois_high_stats |> subset(!Symbol %in% c(ICs, trans)) -> GPCRTK_high_stats
+high_gois_stats |>
+  lapply(subset, !SYMBOL %in% c(ICs, trans)) |>
+  set_own_names() -> high_GPCRTK_stats
 
-# Bar Chart --------------------------------------------------------------------
+# Make a comprehensive structure
+gois_stats <- list(allGOIs = all_gois_stats,
+                   highGOIs = high_gois_stats,
+                   highICTs = high_ICT_stats,
+                   highICs = high_IC_stats,
+                   highTrans = high_trans_stats,
+                   highGPCRTKs = high_GPCRTK_stats)
 
-# Colors
-line_color <- "gray17"
-err_color <- "gray17"
+# --- Bar Charting -------------------------------------------------------------
 
 # Limits
-y_max <- max(gois_all_stats$Mean)
-y_max_sd <- gois_all_stats$Std_Dev[gois_all_stats$Mean == y_max]
+y_max <- max(all_gois_stats$Mean)
+y_max_sd <- all_gois_stats$Std_Dev[all_gois_stats$Mean == y_max]
 y_limit <- ceiling(y_max + y_max_sd)
 
-gois_stats <- list(allGOIs = gois_all_stats,
-                   highGOIs = gois_high_stats,
-                   highICTs = ICT_high_stats,
-                   highICs = IC_high_stats,
-                   highTrans = trans_high_stats,
-                   highGPCRTKs = GPCRTK_high_stats)
 
-for (name in names(gois_stats)) {
-  
-  # Prepare the Frame
-  gg_frame <-
-    ggplot(data = gois_stats[[name]],
-           aes(x = Symbol, y = Mean, fill = Symbol)) +
-    theme_bw(base_size = 15, base_rect_size = 1.5) +
-    theme(axis.text.x = element_text(size = 10, angle = 90,
-                                     vjust = 0.5, hjust = 1),
-          axis.text.y = element_text(size = 14),
-          axis.title = element_text(size = 14),
-          legend.position = "none") +
-    scale_y_continuous(expand = c(0.01, 0.02),
-                       breaks = seq(0, y_limit, 0.5)) +
-    xlab("Genes of Interest") +
-    ylab(substitute(log[2]*(x+1), list(x = count_type))) +
-    ggtitle(label = paste0(GEO_id, " (n = ", sample_size,")"))
-  
-  # Draw the Bars
-  gg_bars <- gg_frame +
-    geom_bar(stat = "identity", width = 0.75) +
-    geom_errorbar(aes(ymin = Mean - Std_Dev,
-                      ymax = Mean + Std_Dev),
-                  linewidth = 1.0, width = 0.5, color = err_color)
-  
-  # # Alternative with borders
-  # gg_bars <- gg_frame +
-  #   geom_bar(stat = "identity", width = 0.7,
-  #            color = line_color, linewidth = 0.1) +
-  #   geom_errorbar(aes(ymin = Mean - Std_Dev,
-  #                     ymax = Mean + Std_Dev),
-  #                 linewidth = 1.0, width = 0.5, color = err_color)
-  
-  # Add the Expression Threshold
-  gg_thr <- gg_bars +
-    geom_hline(yintercept = thr,
-               linetype = "dashed",
-               color = line_color,
-               linewidth = 1)
-  
-  # Save the Chart
-  r4tcpl::savePlots(
-    \(){print(gg_thr)},
-    width_px = 2000,
-    figure_Name = paste0(GEO_id, "_log2", count_type, "_", name, "_chart"),
-    figure_Folder = out_subdir)
-}
+gois_stats |> names() |> lapply(\(family_name) {
+  gois_stats[[family_name]] |>
+    lapply(plot_barChart, family_name, 12, border = FALSE, thr)
+}) |> invisible()
+
+
+
+stop()
 
 # END --------------------------------------------------------------------------
 
