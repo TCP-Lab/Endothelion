@@ -110,17 +110,33 @@ threshold <- function(xSeries,
 
 
 
-# 'gois_stats' is supposed to be a data.frame with (at least) a gene
-# annotation column with gene symbols (called SYMBOL), descriptive statistics
-# about expression, and the  "own_name" attribute of the associated series.
-plot_barChart <- function(gois_stats, family_name, y_limit, border = FALSE, thr, out_folder = out_dir) {
-  
+# 'gois_stats' is supposed to be a data.frame with:
+#   - descriptive statistics about gene expression in a Series;
+#   - gene annotation columns featuring (at least) the 'SYMBOL' key;
+#   - the "own_name" character attribute of the associated Series;
+#   - the "metadata" data frame attribute about Runs participating in the stats.
+plot_barChart <- function(gois_stats,
+                          family_name,
+                          y_limit,
+                          border = FALSE,
+                          thr,
+                          out_folder = out_dir)
+{
   # Colors
   line_color <- "gray17"
   err_color <- "gray17"
   
-  # Get series_ID
+  # Get series_ID, sample size, and average megareads per Run
   gois_stats |> attr("own_name") -> series_ID
+  gois_stats |> attr("metadata") -> meta_table
+  meta_table |> nrow() -> n
+  if (meta_table |> hasName("read_count")) {
+    meta_table |> dplyr::select(read_count) |>
+      (\(z){colMeans(z)/1e6})() |> round(digits = 2) -> megareads
+  } else {megareads <- NA}
+  if (meta_table |> hasName("library_layout")) {
+    meta_table$library_layout[1] -> libLay
+  } else {libLay <- NA}
   
   # Prepare the Frame
   gg_frame <-
@@ -136,8 +152,9 @@ plot_barChart <- function(gois_stats, family_name, y_limit, border = FALSE, thr,
                        breaks = seq(0, y_limit, 0.5)) +
     xlab("Genes of Interest") +
     ylab(substitute(log[2]*(x+1), list(x = "TPM"))) +
-    ggtitle(label = paste0(series_ID, " (n = ...??...)"))
-  
+    ggtitle(label = paste0(series_ID, " (n = ", n,
+                           ", depth = ", megareads, " MegaReads",
+                           ", library ", libLay, ")"))
   # Draw the Bars
   if (border) {
     gg_bars <- geom_bar(stat = "identity", width = 0.7,
@@ -149,14 +166,12 @@ plot_barChart <- function(gois_stats, family_name, y_limit, border = FALSE, thr,
     geom_errorbar(aes(ymin = Mean - Std_Dev,
                       ymax = Mean + Std_Dev),
                   linewidth = 1.0, width = 0.5, color = err_color)
-  
   # Add the Expression Threshold
   gg_thr <- gg_errorbar +
     geom_hline(yintercept = thr[[series_ID]],
                linetype = "dashed",
                color = line_color,
                linewidth = 1)
-  
   # Save the Chart
   r4tcpl::savePlots(
     \(){print(gg_thr)},
@@ -164,14 +179,6 @@ plot_barChart <- function(gois_stats, family_name, y_limit, border = FALSE, thr,
     figure_Name = paste0(series_ID, "_", family_name, "_chart"),
     figure_Folder = file.path(out_folder, series_ID))
 }
-
-
-
-
-
-
-
-
 
 
 

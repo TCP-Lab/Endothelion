@@ -28,6 +28,7 @@
 
 library(ggplot2)
 library(r4tcpl)
+# library(dplyr)
 # library(tidyr)
 # library(httr)
 
@@ -188,7 +189,7 @@ high_gois_stats |>
   lapply(subset, !SYMBOL %in% c(ICs, trans)) |>
   set_own_names() -> high_GPCRTK_stats
 
-# Make a comprehensive structure
+# Make a comprehensive structure (list of lists)
 gois_stats <- list(allGOIs = all_gois_stats,
                    highGOIs = high_gois_stats,
                    highICTs = high_ICT_stats,
