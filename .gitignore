@@ -1,6 +1,7 @@
-# Local data folders
+# Local data and manuscript folders
 /data/out/
 /data/in/Lines/
+/manuscript/
 
 # Sublime Text project files
 *.sublime-*
