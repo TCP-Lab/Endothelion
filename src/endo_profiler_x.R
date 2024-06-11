@@ -159,6 +159,18 @@ all_gois_stats |> names() |>
     all_gois_stats[[series_name]] |> subset(Mean > thr[[series_name]])
   }, simplify = FALSE, USE.NAMES = TRUE) |> set_own_names() -> high_gois_stats
 
+
+
+# Preserving attributes ########################################################
+all_gois_stats |> names() |>
+  sapply(\(series_name) {
+    all_gois_stats[[series_name]] |> bkp_df_attr() -> attribs
+    all_gois_stats[[series_name]] |> subset(Mean > thr[[series_name]]) |> restore_df_attr(attribs)
+  }, simplify = FALSE, USE.NAMES = TRUE) -> high_gois_stats2
+################################################################################
+
+
+
 # A (temporary) patch for the TGS dataset from r4tcpl v.1.5.1
 patch4TGS <- c("MCUB",
                "MCUR1",
@@ -221,14 +233,6 @@ cat("\n", GEO_id, " is done!\n", sep = "")
 
 
 
-
-
-
-out_subdir <- file.path(out_dir, GEO_id)
-# Set the output folder
-if (! dir.exists(out_subdir)) {
-  dir.create(out_subdir, recursive = TRUE)
-}
 
 
 # Load count matrix and check header
