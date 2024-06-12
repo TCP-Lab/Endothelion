@@ -28,7 +28,7 @@
 
 library(ggplot2)
 library(r4tcpl)
-# library(dplyr)
+library(dplyr)
 # library(tidyr)
 # library(httr)
 
@@ -123,7 +123,7 @@ echo("\nSTEP 2 :: threshold computation", "green")
 
 model |> lapply(threshold, names(model)) -> thr
 
-# --- GeneSet Intersection -----------------------------------------------------
+# --- GOI Extraction -----------------------------------------------------------
 
 # Intersect with GOIs
 echo("\nSTEP 3 :: GOI extraction", "green")
@@ -154,22 +154,10 @@ slim_model |> lapply(\(series) {
 }) |> set_own_names() -> all_gois_stats
 
 # Only expressed GOIs
-all_gois_stats |> names() |>
-  sapply(\(series_name) {
-    all_gois_stats[[series_name]] |> subset(Mean > thr[[series_name]])
-  }, simplify = FALSE, USE.NAMES = TRUE) |> set_own_names() -> high_gois_stats
-
-
-
-# Preserving attributes ########################################################
-all_gois_stats |> names() |>
-  sapply(\(series_name) {
-    all_gois_stats[[series_name]] |> bkp_df_attr() -> attribs
-    all_gois_stats[[series_name]] |> subset(Mean > thr[[series_name]]) |> restore_df_attr(attribs)
-  }, simplify = FALSE, USE.NAMES = TRUE) -> high_gois_stats2
-################################################################################
-
-
+# (use dplyr::filter instead of base::subset to preserve attributes)
+all_gois_stats |> names() |> sapply(\(series_name) {
+    all_gois_stats[[series_name]] |> filter(Mean > thr[[series_name]])
+  }, simplify = FALSE, USE.NAMES = TRUE) -> high_gois_stats
 
 # A (temporary) patch for the TGS dataset from r4tcpl v.1.5.1
 patch4TGS <- c("MCUB",
@@ -184,22 +172,11 @@ patch4TGS <- c("MCUB",
 ICs <- c(TGS$ICs, patch4TGS)
 trans <- TGS$trans
 
-# Only expressed ICTs
-high_gois_stats |>
-  lapply(subset, SYMBOL %in% c(ICs, trans)) |>
-  set_own_names() -> high_ICT_stats
-# Only expressed ICs
-high_gois_stats |>
-  lapply(subset, SYMBOL %in% ICs) |>
-  set_own_names() -> high_IC_stats
-# Only expressed transporters
-high_gois_stats |>
-  lapply(subset, SYMBOL %in% trans) |>
-  set_own_names() -> high_trans_stats
-# Only expressed receptors (GPCRs and RTKs)
-high_gois_stats |>
-  lapply(subset, !SYMBOL %in% c(ICs, trans)) |>
-  set_own_names() -> high_GPCRTK_stats
+# Only expressed ICTs, ICs, transporters, and receptors (GPCRs and RTKs)
+high_gois_stats |> lapply(filter, SYMBOL %in% c(ICs, trans)) -> high_ICT_stats
+high_gois_stats |> lapply(filter, SYMBOL %in% ICs) -> high_IC_stats
+high_gois_stats |> lapply(filter, SYMBOL %in% trans) -> high_trans_stats
+high_gois_stats |> lapply(filter, !SYMBOL %in% c(ICs, trans)) -> high_GPCRTK_stats
 
 # Make a comprehensive structure (list of lists)
 gois_stats <- list(allGOIs = all_gois_stats,
@@ -211,15 +188,17 @@ gois_stats <- list(allGOIs = all_gois_stats,
 
 # --- Bar Charting -------------------------------------------------------------
 
-# Limits
-y_max <- max(all_gois_stats$Mean)
-y_max_sd <- all_gois_stats$Std_Dev[all_gois_stats$Mean == y_max]
+# Set Limits
+all_gois_stats |> sapply(\(series)series$Mean |> max()) |> which.max() -> s_indx
+all_gois_stats[[s_indx]]$Mean |> which.max() -> g_indx
+all_gois_stats[[s_indx]]$Mean[g_indx] -> y_max
+all_gois_stats[[s_indx]]$Std_Dev[g_indx] -> y_max_sd
 y_limit <- ceiling(y_max + y_max_sd)
 
 
 gois_stats |> names() |> lapply(\(family_name) {
   gois_stats[[family_name]] |>
-    lapply(plot_barChart, family_name, 12, border = FALSE, thr)
+    lapply(plot_barChart, family_name, y_limit, border = FALSE, thr)
 }) |> invisible()
 
 
@@ -240,14 +219,10 @@ if (!("gene_id" %in% colnames(ncounts) && "SYMBOL" %in% colnames(ncounts))) {
   stop("\n Bad formatted count table... Stop executing.")
 }
 
-
 # Normalization check: sum(TPMs) == 10^6
 if (any(abs(totalCounts(series) - 1e6) > 5)) {
   cat("\nWARNING:\n Bad TPM normalization... Check counts in matrix!\n")
 }
-
-
-
 
 
 if (dnues2(gois_ncounts$SYMBOL)[1] > 0) {

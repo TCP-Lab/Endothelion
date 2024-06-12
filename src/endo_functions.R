@@ -34,22 +34,6 @@ set_own_names <- function(parent_list) {
   }) |> setNames(names(parent_list)) # Also keep original names in parent list
 }
 
-
-# To save data frame extra attributes when subsetting through base::subset
-bkp_df_attr <- function(df) {
-  # Store original extra attributes for later restoring
-  df |> attributes() |> names() %in% c("names", "row.names", "class") -> indx
-  attributes(df)[!indx]
-}
-# To restore previously saved data frame extra attributes
-restore_df_attr <- function(df, bkp_attribs) {
-  attributes(df) <- append(attributes(df), bkp_attribs)
-  # attributes(df) %<>% append(bkp_attribs)
-  return(df)
-}
-
-
-
 # Compute threshold from cont distribution
 threshold <- function(xSeries,
                       all_names,
@@ -121,10 +105,6 @@ threshold <- function(xSeries,
   }
   return(thr)
 }
-
-
-
-
 
 # 'gois_stats' is supposed to be a data.frame with:
 #   - descriptive statistics about gene expression in a Series;
