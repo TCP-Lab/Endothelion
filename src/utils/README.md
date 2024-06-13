@@ -100,13 +100,14 @@ is set at the beginning of the R script (`set.seed(7)`) to ensure
 reproducibility.
 
 __NOTE 2:__
-When running the _hCMEC_D3_ pipeline using the test data set, namely
+When running the _hCMEC_D3_ (or _hCMEC_D3x_) pipeline using the test data set,
+namely
 ```bash
 kerblam run --profile test hCMEC_D3
 ```
-the warning _Bad TPM normalization... Check counts in matrix!_ will be thrown.
-Clearly this is expected and perfectly normal, given the row-wise reduction of
-the count matrices.
+the warnings _Bad TPM normalization in series..._ will be thrown. Clearly this
+is expected and perfectly normal, given the row-wise reduction of the count
+matrices.
 
 __NOTE 3:__
 For both count matrices, a further warning will be issued during the pipeline
