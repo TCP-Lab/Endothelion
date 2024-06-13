@@ -1,0 +1,8 @@
+better view in "kerblam data" (remote should be a sub of the branch above)
+
+kerblam new could ask the user for a "paper" or "manuscript" "report" folder to put in .gitignore?
+
+Creating a custom SubSetDF function that directly keep attributes to replace base::subset was excessively trivky beacuse of the non standard evaluation (see e.g., line ... where Mean refers to env = x but list_names to env=parent.env)...
+As an extra benefit, this approach is explicit and remind the user that these dataframes are endowed with special attributes, important to the program execution.
+use instead :
+?dplyr::filter

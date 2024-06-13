@@ -116,6 +116,17 @@ model <- new_xModel(target_dir)
 
 factTable(model)
 
+# Normalization check: sum(TPMs) == 10^6
+model |> sapply(\(series) {
+  if (!all((abs(totalCounts(series) - 1e6) < 5) |
+           (totalCounts(series) == 0))) {
+    cat("\nWARNING:\n Bad TPM normalization in series ",
+        attr(series, "own_name"), "...\n Check counts in the matrix!\n\n",
+        sep = "")
+    totalCounts(series) |> print()
+  }
+}) |> invisible()
+
 # --- Thresholding -------------------------------------------------------------
 
 # Compute threshold
@@ -201,11 +212,10 @@ gois_stats |> names() |> lapply(\(family_name) {
     lapply(plot_barChart, family_name, y_limit, border = FALSE, thr)
 }) |> invisible()
 
+# --- END ----------------------------------------------------------------------
 
 
 stop()
-
-# END --------------------------------------------------------------------------
 
 cat("\n", GEO_id, " is done!\n", sep = "")
 
@@ -217,11 +227,6 @@ cat("\n", GEO_id, " is done!\n", sep = "")
 # Load count matrix and check header
 if (!("gene_id" %in% colnames(ncounts) && "SYMBOL" %in% colnames(ncounts))) {
   stop("\n Bad formatted count table... Stop executing.")
-}
-
-# Normalization check: sum(TPMs) == 10^6
-if (any(abs(totalCounts(series) - 1e6) > 5)) {
-  cat("\nWARNING:\n Bad TPM normalization... Check counts in matrix!\n")
 }
 
 
