@@ -17,7 +17,7 @@
 # General settings and variables 
 source ./src/bash_commons.sh
 
-echo -e "\n${mag}STARTING hCMEC-D3 PROFILING${end}"
+echo -e "\n${mag}STARTING hCMEC/D3 PROFILING${end}"
 echo -e "${mag}===========================${end}"
 # --- The pipeline starts here -------------------------------------------------
 

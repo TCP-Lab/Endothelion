@@ -7,11 +7,11 @@
 #? analysis of ICT+ absolute expression in multiple hCMEC/D3 cell line datasets.
 #? Unlike its first implementation (i.e., `hCMECold.sh`), this new pipeline uses
 #? *SeqLoader* for the definition of S3 *xSeries* and *xModel* classes in R,
-#? allowing, among other things, direct invocation of a single, more simple, and
-#? maintainable R script, without the need for additional wrappers.
+#? allowing, among other things, direct invocation of a single, simpler, and
+#? more maintainable R script, without the need for additional wrappers.
 # ==============================================================================
  
-# General settings and variables 
+# --- General settings and variables -------------------------------------------
 source ./src/bash_commons.sh
 
 # Set variables from runtime option JSON file
@@ -21,7 +21,7 @@ central_tendency="$(cat $OPTS | jq -r ".central_tendency")"
 threshold_adapt="$(cat $OPTS | jq -r ".threshold_adapt")"
 threshold_value="$(cat $OPTS | jq -r ".threshold_value")"
 
-echo -e "\n${mag}STARTING hCMEC-D3 PROFILING${end}"
+echo -e "\n${mag}STARTING hCMEC/D3 PROFILING${end}"
 echo -e "${mag}===========================${end}"
 # --- The pipeline starts here -------------------------------------------------
 
@@ -39,7 +39,8 @@ Rscript "./src/endo_profiler.R" \
 
 # --- The pipeline ends here ---------------------------------------------------
 if [[ $? -eq 0 ]]; then
-	echo -e "${grn}PIPELINE COMPLETED SUCCESSFULLY${end}\n"
+	echo -e "${mag}===============================${end}"
+	echo -e "${mag}PIPELINE COMPLETED SUCCESSFULLY\n${end}"
 else
 	echo -e "${red}\nPIPELINE FAILED${end}\n"
 fi

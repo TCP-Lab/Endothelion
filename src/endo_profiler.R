@@ -22,13 +22,12 @@
 # the algorithm returns a thr value less than 1, thr is coerced to 1 by default.
 # In contrast, when `threshold_adapt == "false"`, the `threshold_value` is the
 # real value to be used as constant threshold in all the experiments.
-#
 
 # --- Packages -----------------------------------------------------------------
 
 library(ggplot2)
 library(r4tcpl)
-library(dplyr)
+library(dplyr, warn.conflicts = FALSE)
 # library(tidyr)
 # library(httr)
 
@@ -108,12 +107,11 @@ if (! file.exists(gois_file)) {
 # --- xModel Loading -----------------------------------------------------------
 
 # Construct xModel from data
-echo("\nSTEP 1 :: xModel loading", "green")
-echo("\nModel facts", "yellow")
-cat("Source   :", target_dir, "\n")
-
+echo("\nSTEP 1 :: xModel Loading", "green")
 model <- new_xModel(target_dir)
 
+echo("\nModel facts", "yellow")
+cat("Source   :", target_dir, "\n")
 factTable(model)
 
 # Normalization check: sum(TPMs) == 10^6
@@ -127,17 +125,23 @@ model |> sapply(\(series) {
   }
 }) |> invisible()
 
-# --- Thresholding -------------------------------------------------------------
+# Annotation check: SYMBOL column needed
+model |> sapply(\(series) {
+  if(!hasName(series$annotation, "SYMBOL")) {
+    stop("\nMissing gene symbol annotation... Stop execution.")
+  }
+}) |> invisible()
+
+# --- Threshold Computation ----------------------------------------------------
 
 # Compute threshold
-echo("\nSTEP 2 :: threshold computation", "green")
-
+echo("\nSTEP 2 :: Threshold Computation", "green")
 model |> lapply(threshold, names(model)) -> thr
 
 # --- GOI Extraction -----------------------------------------------------------
 
 # Intersect with GOIs
-echo("\nSTEP 3 :: GOI extraction", "green")
+echo("\nSTEP 3 :: GOI Extraction", "green")
 
 # Load the list of GOIs
 # NOTE: use 'r4tcpl::TGS' to access the full transportome, or a subset of it!
@@ -187,53 +191,35 @@ trans <- TGS$trans
 high_gois_stats |> lapply(filter, SYMBOL %in% c(ICs, trans)) -> high_ICT_stats
 high_gois_stats |> lapply(filter, SYMBOL %in% ICs) -> high_IC_stats
 high_gois_stats |> lapply(filter, SYMBOL %in% trans) -> high_trans_stats
-high_gois_stats |> lapply(filter, !SYMBOL %in% c(ICs, trans)) -> high_GPCRTK_stats
+high_gois_stats |> lapply(filter, !SYMBOL %in% c(ICs, trans)) -> high_rex_stats
 
-# Make a comprehensive structure (list of lists)
-gois_stats <- list(allGOIs = all_gois_stats,
-                   highGOIs = high_gois_stats,
-                   highICTs = high_ICT_stats,
-                   highICs = high_IC_stats,
-                   highTrans = high_trans_stats,
-                   highGPCRTKs = high_GPCRTK_stats)
+# Make a comprehensive named structure (list of lists)
+gois_stats <- list(all_GOIs = all_gois_stats,
+                   high_GOIs = high_gois_stats,
+                   high_ICTs = high_ICT_stats,
+                   high_ICs = high_IC_stats,
+                   high_Transporters = high_trans_stats,
+                   high_Receptors = high_rex_stats)
 
 # --- Bar Charting -------------------------------------------------------------
+
+# Draw a bar chart for each Series
+echo("\nSTEP 4 :: Series Bar Charting", "green")
 
 # Set Limits
 all_gois_stats |> sapply(\(series)series$Mean |> max()) |> which.max() -> s_indx
 all_gois_stats[[s_indx]]$Mean |> which.max() -> g_indx
 all_gois_stats[[s_indx]]$Mean[g_indx] -> y_max
 all_gois_stats[[s_indx]]$Std_Dev[g_indx] -> y_max_sd
-y_limit <- ceiling(y_max + y_max_sd)
+y_limit <- y_max + y_max_sd
 
-
+# Draw a bar chart for each Series
 gois_stats |> names() |> lapply(\(family_name) {
+  echo(paste("\nCharting", family_name), "yellow")
   gois_stats[[family_name]] |>
     lapply(plot_barChart, family_name, y_limit, border = FALSE, thr)
 }) |> invisible()
 
 # --- END ----------------------------------------------------------------------
+echo(paste0("\n", attr(model, "own_name"), " is done!\n"), "green")
 
-
-stop()
-
-cat("\n", GEO_id, " is done!\n", sep = "")
-
-
-
-
-
-
-# Load count matrix and check header
-if (!("gene_id" %in% colnames(ncounts) && "SYMBOL" %in% colnames(ncounts))) {
-  stop("\n Bad formatted count table... Stop executing.")
-}
-
-
-if (dnues2(gois_ncounts$SYMBOL)[1] > 0) {
-  stop("\n Cannot handle duplicated gene symbols...")
-}
-
-# Possibly collapse duplicated Gene Symbols (keeping the most expressed)
-#DEGs <- DEGs[order(DEGs$adj_pval), ] ## from GOZER; to be adapted
-#DEGs <- DEGs[!duplicated(DEGs$GeneSymbol), ]
