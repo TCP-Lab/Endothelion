@@ -6,7 +6,7 @@ echo <- function(text, color = "white") {
   os_type <- Sys.info()["sysname"]
   if (os_type == "Windows") {
     warning("Colored echo is just for Bash!")
-    cat(text)
+    cat(text, "\n")
   } else if (os_type == "Linux") {
     if      (color == "red")     {col <- "\\e[1;31m"}
     else if (color == "green")   {col <- "\\e[1;32m"}
@@ -121,7 +121,6 @@ plot_barChart <- function(gois_stats,
   # Colors
   line_color <- "gray17"
   err_color <- "gray17"
-  
   # Get series_ID, sample size, and average megareads per Run
   gois_stats |> attr("own_name") -> series_ID
   gois_stats |> attr("metadata") -> meta_table
@@ -133,6 +132,8 @@ plot_barChart <- function(gois_stats,
   if (meta_table |> hasName("library_layout")) {
     meta_table$library_layout[1] -> libLay
   } else {libLay <- NA}
+  # Log Messages
+  cat("xSeries ", series_ID, "... ", sep = "")
   
   # Prepare the Frame
   gg_frame <-
@@ -144,13 +145,14 @@ plot_barChart <- function(gois_stats,
           axis.text.y = element_text(size = 14),
           axis.title = element_text(size = 14),
           legend.position = "none") +
-    scale_y_continuous(expand = c(0.01, 0.02),
+    scale_y_continuous(limits=c(0, y_limit),
+                       expand = c(0.01, 0.02),
                        breaks = seq(0, y_limit, 0.5)) +
     xlab("Genes of Interest") +
     ylab(substitute(log[2]*(x+1), list(x = "TPM"))) +
     ggtitle(label = paste0(series_ID, " (n = ", n,
-                           ", depth = ", megareads, " MegaReads",
-                           ", library ", libLay, ")"))
+                           ", depth = ", megareads, " MegaReads, ",
+                           libLay, " library) - GOI subset: ", family_name))
   # Draw the Bars
   if (border) {
     gg_bars <- geom_bar(stat = "identity", width = 0.7,
@@ -174,6 +176,8 @@ plot_barChart <- function(gois_stats,
     width_px = 2000,
     figure_Name = paste0(series_ID, "_", family_name, "_chart"),
     figure_Folder = file.path(out_folder, series_ID))
+  
+  cat("done\n")
 }
 
 
