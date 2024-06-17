@@ -30,6 +30,8 @@ library(r4tcpl)
 library(dplyr, warn.conflicts = FALSE)
 # library(tidyr)
 # library(httr)
+# library(AnnotationDbi)
+# library(org.Hs.eg.db)
 
 # Ugly temporary solution while waiting to package the SeqLoader
 dest_file <- "./src/seq_loader.R"
@@ -220,6 +222,39 @@ gois_stats |> names() |> lapply(\(family_name) {
     lapply(plot_barChart, family_name, y_limit, border = FALSE, thr)
 }) |> invisible()
 
+# --- Meta-analysis ------------------------------------------------------------
+
+echo("\nSTEP 5 :: Model Synthesis", "green")
+
+slim_model |> geneStats(descriptive = eval(parse(text = descriptive)),
+                        maic = "inclusive",
+                        annot = FALSE) -> average_expression
+
+cat("Appending annotations...")
+# Change to `OrgDb_key="ENSEMBLTRANS"` when working at isoform level
+average_expression |> add_annotation(OrgDb_key="ENSEMBL") -> average_expression
+
+# Save full GOI set as CSV
+write.csv(average_expression,
+          file.path(out_dir,
+                    paste0(attr(model,"own_name"),"_AverExpress_ALL_GOIs.csv")),
+          row.names = FALSE)
+
 # --- END ----------------------------------------------------------------------
 echo(paste0("\n", attr(model, "own_name"), " is done!\n"), "green")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

@@ -11,14 +11,14 @@
 # Input Loading-----------------------------------------------------------------
 
 # General error message
-error_msg <- "\nERROR by endo_function.R\n"
+error_msg <- "\nERROR by endold_synthesis.R\n"
 
 # Check if the correct number of arguments is provided from command-line
 if (length(commandArgs(trailingOnly = TRUE)) != 5) {
   cat(error_msg,
       "One or more arguments are missing. Usage:\n\n",
-      "Rscript endo_function.R <endo_model> <central_tendency> \\\n",
-      "                        <GOIs> <subGOIs_prefix> <out_dir>\n\n")
+      "Rscript endold_synthesis.R <endo_model> <central_tendency> \\\n",
+      "                           <GOIs> <subGOIs_prefix> <out_dir>\n\n")
   quit(status = 1)
 }
 

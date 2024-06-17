@@ -183,7 +183,30 @@ plot_barChart <- function(gois_stats,
 
 
 
-
+add_annotation <- function(gene_matrix, OrgDb_key = "ENSEMBL") {
+  # See columns(org.Hs.eg.db) or keytypes(org.Hs.eg.db) for a complete list of
+  # all possible annotations.
+  org_db <- org.Hs.eg.db::org.Hs.eg.db
+  annots <- AnnotationDbi::select(org_db,
+                                  keys = gene_matrix[,"IDs"],
+                                  columns = c("SYMBOL", "GENENAME", "GENETYPE"),
+                                  keytype = OrgDb_key)
+  # Warning: 'select()' returned 1:many mapping between keys and columns
+  # ========>
+  # Collapse the duplicated entries in the ID column and concatenate the
+  # (unique) values in the remaining columns using a comma as a separator to
+  # prevent rows from being added in the following join step.
+  if (anyDuplicated(annots[,OrgDb_key])) {
+    cat("\nWARNING:\n Multiple annotation entries corresponding to a single\n",
+        OrgDb_key, "ID will be collapsed by a comma separator.\n")
+    annots <- aggregate(. ~ get(OrgDb_key),
+                        data = annots,
+                        FUN = \(x)paste(unique(x), collapse = ","),
+                        na.action = NULL)[,-1]
+  }
+  gene_matrix <- merge(annots, gene_matrix,
+                       by.x = OrgDb_key, by.y = "IDs", all.y = TRUE)
+}
 
 
 

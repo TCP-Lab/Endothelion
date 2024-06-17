@@ -40,15 +40,15 @@ library(r4tcpl)
 # Input Loading-----------------------------------------------------------------
 
 # General error message
-error_msg <- "\nERROR by endo_profiler.R\n"
+error_msg <- "\nERROR by endold_profiler.R\n"
 
 # Check if the correct number of arguments is provided from command-line
 if (length(commandArgs(trailingOnly = TRUE)) != 6) {
   cat(error_msg,
       "One or more arguments are missing. Usage:\n\n",
-      "Rscript endo_profiler.R <count_matrix> <count_type> \\\n",
-      "                        <threshold_adapt> <threshold_value> \\\n",
-      "                        <GOIs> <out_dir>\n\n")
+      "Rscript endold_profiler.R <count_matrix> <count_type> \\\n",
+      "                          <threshold_adapt> <threshold_value> \\\n",
+      "                          <GOIs> <out_dir>\n\n")
   quit(status = 1)
 }
 
