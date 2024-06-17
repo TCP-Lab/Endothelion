@@ -1,19 +1,18 @@
 #!/bin/bash
 
 # ==============================================================================
-# To find the different endothelial models (endo-models) output directory is
+# To find the different endothelial models (endo-models), output directory is
 # first searched for all "*profileReport.csv" files as returned from the
 # previous analysis step, then basenames and the lowest levels of their paths
-# (i.e., the GEO series ID part) are removed applying `dirname` command twice.
+# (i.e., the GEO series ID part) are removed by applying `dirname` twice.
 # Unique results of such `find` statement represent the endo-models addressed by
-# the pipeline, under the hypothesis that input filesystem was properly
-# organized.
+# the pipeline, under the hypothesis that input filesystem was properly set.
 # ==============================================================================
 
-# General settings and variables 
-source ./src/commons.sh
+# --- General settings and variables -------------------------------------------
+source ./src/bash_commons.sh
 
-# Set the input path, depending on the pipeline that is running
+# Set the input path (based on which pipeline is running)
 target_path="$1"
 
 # Set variables from runtime option JSON file
@@ -23,7 +22,6 @@ subGOIs_prefix="$(cat $OPTS | jq -r ".subGOIs_prefix")"
 central_tendency="$(cat $OPTS | jq -r ".central_tendency")"
 
 # --- Main program -------------------------------------------------------------
-
 # Search endo-models
 models_found=$(find "$target_path" -type f -iname "*profileReport.csv" \
 	| xargs -d "\n" -n 1 dirname | xargs -d "\n" -n 1 dirname \
@@ -42,7 +40,7 @@ do
 	echo "----------------------------------------------------"
 	echo "${yel}Analyzing endo-model ${counter}/${models_found}:${end}"
 	echo "$endo_model"
-	Rscript "./src/endo_function.R" \
+	Rscript "./src/endold_synthesis.R" \
 		"$endo_model" \
 		"$central_tendency" \
 		"$GOIs" \
