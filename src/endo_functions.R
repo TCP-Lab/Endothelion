@@ -180,9 +180,7 @@ plot_barChart <- function(gois_stats,
   cat("done\n")
 }
 
-
-
-
+# Regenerate annotation from scratch
 add_annotation <- function(gene_matrix, OrgDb_key = "ENSEMBL") {
   # See columns(org.Hs.eg.db) or keytypes(org.Hs.eg.db) for a complete list of
   # all possible annotations.
@@ -204,8 +202,8 @@ add_annotation <- function(gene_matrix, OrgDb_key = "ENSEMBL") {
                         FUN = \(x)paste(unique(x), collapse = ","),
                         na.action = NULL)[,-1]
   }
-  gene_matrix <- merge(annots, gene_matrix,
-                       by.x = OrgDb_key, by.y = "IDs", all.y = TRUE)
+  colnames(annots)[colnames(annots) == OrgDb_key] <- "IDs" 
+  gene_matrix <- merge(annots, gene_matrix, by = "IDs", all.y = TRUE)
 }
 
 

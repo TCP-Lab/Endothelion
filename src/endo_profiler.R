@@ -230,7 +230,7 @@ slim_model |> geneStats(descriptive = eval(parse(text = descriptive)),
                         maic = "inclusive",
                         annot = FALSE) -> average_expression
 
-cat("Appending annotations...")
+cat("\nRegenerating gene annotation from scratch...")
 # Change to `OrgDb_key="ENSEMBLTRANS"` when working at isoform level
 average_expression |> add_annotation(OrgDb_key="ENSEMBL") -> average_expression
 
