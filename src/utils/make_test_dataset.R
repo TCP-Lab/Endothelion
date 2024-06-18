@@ -7,11 +7,10 @@ set.seed(7)
 args = commandArgs(trailingOnly = TRUE)
 target_path <- args[1]
 gois_path <- args[2]
-proj <- args[3]
+count_matrix <- args[3]
 
 # Load files
-read.delim(file.path(target_path,
-                     paste0(proj, "_CountMatrix_genes_TPM.tsv"))) -> df
+read.delim(file.path(target_path, count_matrix)) -> df
 read.csv(gois_path, header = FALSE) |> unlist() -> GOIs
 
 # Find GOIs within the count matrix
@@ -22,7 +21,7 @@ logic[sample(1:length(logic), 5e3)] <- TRUE
 # Subset the count matrix to get a slim version of it
 df <- df[logic,]
 
-file_name <- paste0("test_", proj, "_CountMatrix_genes_TPM.tsv")
+file_name <- paste0("mini", count_matrix)
 cat("----------------------------------------------------\n")
 cat("Saving:", file_name,
     "\n        Test count matrix with", dim(df)[1], "rows.\n")
