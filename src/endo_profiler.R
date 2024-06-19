@@ -109,11 +109,15 @@ if (! file.exists(gois_file)) {
 # --- xModel Loading -----------------------------------------------------------
 
 # Construct xModel from data
-echo("\nSTEP 1 :: xModel Loading", "green")
+echo("\nSTEP 01 :: xModel Loading", "green")
 model <- new_xModel(target_dir)
 
-echo("\nModel facts", "yellow")
+echo("\nFull-Model facts", "yellow")
 cat("Source   :", target_dir, "\n")
+factTable(model)
+
+echo("\nReduced-Model facts", "yellow")
+model |> pruneRuns() |> keepRuns("extra == 1") -> model
 factTable(model)
 
 # Normalization check: sum(TPMs) == 10^6
@@ -127,23 +131,27 @@ model |> sapply(\(series) {
   }
 }) |> invisible()
 
-# Annotation check: SYMBOL column needed
+# Annotation check: Endothelion needs SYMBOLs
 model |> sapply(\(series) {
   if(!hasName(series$annotation, "SYMBOL")) {
     stop("\nMissing gene symbol annotation... Stop execution.")
   }
 }) |> invisible()
 
+# Per-Series detailed report
+echo("\nDetailed report", "yellow")
+model |> sapply(factTable) |> invisible()
+
 # --- Threshold Computation ----------------------------------------------------
 
 # Compute threshold
-echo("\nSTEP 2 :: Threshold Computation", "green")
+echo("\nSTEP 02 :: Threshold Computation", "green")
 model |> lapply(threshold, names(model)) -> thr
 
 # --- GOI Extraction -----------------------------------------------------------
 
 # Intersect with GOIs
-echo("\nSTEP 3 :: GOI Extraction", "green")
+echo("\nSTEP 03 :: GOI Extraction", "green")
 
 # Load the list of GOIs
 # NOTE: use 'r4tcpl::TGS' to access the full transportome, or a subset of it!
@@ -153,25 +161,32 @@ echo("\nGenes of Interest", "yellow")
 cat("Source:", gois_file, "\nLoaded a list of", nrow(gois), "GOIs\n")
 
 # Select Runs and subset genes
-model |> pruneRuns() |> keepRuns("extra == 1") |>
-  subsetGenes("SYMBOL", gois) -> slim_model
+model |> subsetGenes("SYMBOL", gois) -> slim_model
 
 echo("\nSlim model facts", "yellow")
 factTable(slim_model)
 
+# --- Per-Series Stats ---------------------------------------------------------
+
 # Get series-specific stats for all GOIs and save as CSV
+echo("\nSTEP 04 :: Per-Series Stats\n", "green")
 slim_model |> lapply(\(series) {
   series_ID <- attr(series, "own_name")
   series |> geneStats(annot = TRUE) -> all_gois_stats
+  report_name <- paste0(series_ID, "_profileReport.csv")
+  cat("Saving:", report_name, "\n")
   write.csv(all_gois_stats,
-            file.path(out_dir, series_ID,
-                      paste0(series_ID, "_profileReport.csv")),
+            file.path(out_dir, series_ID, report_name),
             row.names = FALSE)
   return(all_gois_stats)
 }) |> set_own_names() -> all_gois_stats
 
-# Only expressed GOIs
-# (use dplyr::filter instead of base::subset to preserve attributes)
+# --- Bar Charting -------------------------------------------------------------
+
+# Make subgroups
+# NOTE: use dplyr::filter instead of base::subset to preserve attributes!
+
+# Only expressed (aka "high") GOIs
 all_gois_stats |> names() |> sapply(\(series_name) {
     all_gois_stats[[series_name]] |> filter(Mean > thr[[series_name]])
   }, simplify = FALSE, USE.NAMES = TRUE) -> high_gois_stats
@@ -203,10 +218,8 @@ gois_stats <- list(all_GOIs = all_gois_stats,
                    high_Transporters = high_trans_stats,
                    high_Receptors = high_rex_stats)
 
-# --- Bar Charting -------------------------------------------------------------
-
 # Draw a bar chart for each Series
-echo("\nSTEP 4 :: Series Bar Charting", "green")
+echo("\nSTEP 05 :: Series Bar Charting", "green")
 
 # Set Limits
 all_gois_stats |> sapply(\(series)series$Mean |> max()) |> which.max() -> s_indx
@@ -224,7 +237,7 @@ gois_stats |> names() |> lapply(\(family_name) {
 
 # --- Meta-analysis ------------------------------------------------------------
 
-echo("\nSTEP 5 :: Model Synthesis", "green")
+echo("\nSTEP 06 :: Model Synthesis", "green")
 
 slim_model |> geneStats(descriptive = eval(parse(text = descriptive)),
                         maic = "inclusive",

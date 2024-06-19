@@ -6,8 +6,9 @@
 # Sublime Text project files
 *.sublime-*
 
-# SeqLoader class
+# External modules
 /src/seq_loader.R
+/src/pca_hc.R
 
 # --- R ----------------------------------------
 
