@@ -51,12 +51,6 @@ threshold <- function(xSeries,
   if (adapt == "true") {
     # Take the log2 of counts
     only_counts <- log2(countMatrix(xSeries)[,-1] + 1)
-    # Make box-plots of count distributions
-    r4tcpl::savePlots(
-      \(){boxplot(only_counts)},
-      figure_Name = paste0(series_ID, "_boxplot"),
-      figure_Folder = file.path(out_folder, series_ID),
-      pdf_out = FALSE)
     # Find the expression threshold adaptively
     # Filter the dataset by keeping only those genes that are detected in the
     # majority of the samples, compute their average expression, then use that
