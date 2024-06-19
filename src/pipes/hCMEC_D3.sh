@@ -28,6 +28,20 @@ echo -e "${mag}===========================${end}"
 # Set the input path (pipeline-specific)
 in_path="./data/in/Lines/hCMEC_D3/"
 
+# Sample Quality Control
+echo -e "\n${grn}STEP 00 :: Quality Control${end}"
+if [[ ! -f ./src/pca_hc.R ]]; then
+	# Temporary solution while waiting for x.FASTQ to be put in pipeline
+	echo -e "\n${yel}Downloading the R script for PCA (by x.FASTQ)${end}"
+	wget -P "./src" \
+		https://raw.githubusercontent.com/TCP-Lab/x.FASTQ/main/workers/pca_hc.R
+fi
+echo -e "\n${yel}Expression Boxes, PCA, and HC${end}"
+Rscript "./src/pca_hc.R" \
+	'countmatrix.*\.tsv' \
+	"${in_path/\/in\//\/out\/}" \
+	"$in_path"
+
 # ICT+ absolute expression profiling in hCMEC-D3 cell line
 Rscript "./src/endo_profiler.R" \
 	"$in_path" \
