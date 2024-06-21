@@ -39,10 +39,8 @@ if (! dir.exists(endo_model)) {
 # Check the central_tendency statistic
 # mean = arithmetic mean
 # nwam = sample size (n)-weighted arithmetic mean
-# sdwam = standard deviation (sd)-weighted arithmetic mean
-# sewam = standard error (se)-weighted arithmetic mean
 # median = well... median
-if (! central_tendency %in% c("mean", "nwam", "sdwam", "sewam", "median")) {
+if (! central_tendency %in% c("mean", "nwam", "median")) {
   cat(error_msg,
       " Unknown central tendency statistic \'", central_tendency,
       "\'\n", sep = "")

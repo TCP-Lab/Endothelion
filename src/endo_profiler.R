@@ -253,6 +253,36 @@ write.csv(average_expression,
                     paste0(attr(model,"own_name"),"_AverExpress_ALL_GOIs.csv")),
           row.names = FALSE)
 
+# Functional Subsetting --------------------------------------------------------
+
+# Get the list of functional subsets to extract
+subGOIs_prefix <- "ICT_subset_"
+subGOIs_files <- list.files(path = dirname(gois_file),
+                            pattern = paste0("^", subGOIs_prefix, ".*\\.csv$"),
+                            full.names = TRUE, recursive = TRUE)
+
+# Read the files into separate data frames and store them in a named list
+subGOIs_files |> sapply(read.csv, header = FALSE) -> subGOIs_list
+
+# Extract GOI subsets and save them with distinctive file names
+for (file_name in names(subGOIs_list)) {
+  # Modify input file names to get output names
+  file_name |> basename() |>
+    sub(subGOIs_prefix, "AverExpress_", x=_) |>
+    sub("\\.csv\\..*$", ".csv", x=_) -> file_label
+  # Subset and save as CSV
+  average_expression |> filter(SYMBOL %in% subGOIs_list[[file_name]]) |>
+    write.csv(file = file.path(out_dir, file_label), row.names = FALSE)
+  # Check for completeness
+  if (length(setdiff(subGOIs_list[[file_name]],average_expression$SYMBOL)) > 0) {
+    cat("\nWARNING by ", file_label, ":",
+        "\n Missing these gene symbols in GOI main list:\n  ", sep = "")
+    cat(setdiff(subGOIs_list[[file_name]],average_expression$SYMBOL), sep="\n  ")
+  }
+}
+
+
+
 # --- END ----------------------------------------------------------------------
 echo(paste0("\n", attr(model, "own_name"), " is done!\n"), "green")
 
