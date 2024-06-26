@@ -169,17 +169,18 @@ factTable(slim_model)
 # --- Per-Series Stats ---------------------------------------------------------
 
 # Get series-specific stats for all GOIs and save as CSV
-echo("\nSTEP 04 :: Per-Series Stats\n", "green")
+echo("\nSTEP 04 :: Per-Series Stats", "green")
 slim_model |> lapply(\(series) {
   series_ID <- attr(series, "own_name")
   series |> geneStats(annot = TRUE) -> all_gois_stats
   report_name <- paste0(series_ID, "_profileReport.csv")
-  cat("Saving:", report_name, "\n")
+  cat("\nSaving:", report_name)
   write.csv(all_gois_stats,
             file.path(out_dir, series_ID, report_name),
             row.names = FALSE)
   return(all_gois_stats)
 }) |> set_own_names() -> all_gois_stats
+cat("\n")
 
 # --- Bar Charting -------------------------------------------------------------
 
@@ -252,6 +253,105 @@ write.csv(average_expression,
           file.path(out_dir,
                     paste0(attr(model,"own_name"),"_AverExpress_ALL_GOIs.csv")),
           row.names = FALSE)
+
+
+
+
+
+# --- correlation ----
+
+# Correlation ScatterPlot Matrix (with fixed text size)
+custom_pairs <- function(data_set, color = "gray15") {
+  
+  # Customize lower panel (correlation values)
+  panel_cor <- function(x, y) {
+    default_usr <- par("usr")
+    on.exit(par(usr = default_usr))
+    par(usr = c(0, 1, 0, 1))
+    r <- round(cor(x, y), digits = 3)
+    text(0.5, 0.5, r, cex = 2)
+  }
+  
+  # Customize upper panel (scatter plots)
+  panel_points <- function(x, y) {
+    points(x, y, pch = 19, cex = 1, col = color)
+  }
+  
+  # Create the plots
+  pairs(data_set,
+        cex.labels = 3,
+        font.labels = 4,
+        lower.panel = panel_cor,
+        upper.panel = panel_points)
+}
+
+# Correlation ScatterPlot Matrix (with fixed text size)
+custom_pairs(data_set = data.frame(GSE138309 = gois_stats$all_GOIs$GSE138309$Mean,
+                                   GSE139133 = gois_stats$all_GOIs$GSE139133$Mean,
+                                   GSE195781 = gois_stats$all_GOIs$GSE195781$Mean,
+                                   GSE205739 = gois_stats$all_GOIs$GSE205739$Mean,
+                                   GSE76528 = gois_stats$all_GOIs$GSE76528$Mean),
+             color = "steelblue4")
+
+
+
+
+
+
+# Sort the average reference by decreasing ICT expression
+average_expression |>
+  select(c("SYMBOL", "Mean")) |> arrange(desc(Mean)) -> reference
+
+# Convert SYMBOL to a factor to ensure that the x-axis values follow the order
+# of the sorted dataframe instead of being alphabetically ordered
+reference$SYMBOL <- factor(reference$SYMBOL, levels = reference$SYMBOL)
+
+
+gois_stats$all_GOIs$GSE138309 |> select(c("SYMBOL", "Mean")) -> df1
+gois_stats$all_GOIs$GSE139133 |> select(c("SYMBOL", "Mean")) -> df2
+gois_stats$all_GOIs$GSE195781 |> select(c("SYMBOL", "Mean")) -> df3
+
+# By using `levels(reference$SYMBOL)` as levels for all other factors ensures
+# that all of them will be plotted following the gene ranking of the reference
+# (i.e., the average) data frame.
+df1$SYMBOL <- factor(df1$SYMBOL, levels = levels(reference$SYMBOL))
+df2$SYMBOL <- factor(df2$SYMBOL, levels = levels(reference$SYMBOL))
+df3$SYMBOL <- factor(df3$SYMBOL, levels = levels(reference$SYMBOL))
+
+# Combine all data into one dataframe for easier plotting
+combined <- bind_rows(
+  mutate(reference, Source = "Reference"),
+  mutate(df1, Source = "DF1"),
+  mutate(df2, Source = "DF2"),
+  mutate(df3, Source = "DF3")
+)
+
+
+# Plot the reference dataframe
+# Prepare the Frame
+gg_frame <-
+  ggplot(combined, aes(x = SYMBOL, y = Mean, group = Source, color = Source)) + 
+  theme_bw(base_size = 15, base_rect_size = 1.5) +
+  theme(axis.text.x = element_text(size = 10, angle = 90,
+                                   vjust = 0.5, hjust = 1),
+        axis.text.y = element_text(size = 14),
+        axis.title = element_text(size = 14),
+        legend.position = "none") +
+  xlab("Genes of Interest") +
+  ylab(substitute(log[2]*(x+1), list(x = "TPM"))) +
+  ggtitle(label = "Fading Trend")
+
+gg_points <- gg_frame + geom_point() # + geom_line()
+
+
+
+print(gg_points)
+
+
+
+
+
+
 
 # Functional Subsetting --------------------------------------------------------
 
