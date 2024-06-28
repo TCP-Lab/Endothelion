@@ -237,8 +237,8 @@ fadePlot <- function(matrix_of_means) {
                                      vjust = 0.5, hjust = 1),
           axis.text.y = element_text(size = 14),
           axis.title = element_text(size = 14),
-          legend.position = "inside",
-          legend.position.inside = c(0.8, 0.6)) +
+          legend.text = element_text(size = 14),
+          legend.position = c(0.8, 0.6)) + #legend.position.inside = c(0.8, 0.6)) +
     xlab("Genes of Interest") +
     ylab(substitute(log[2]*(x+1), list(x = "TPM"))) +
     ggtitle(label = "Expression Fading Plot")

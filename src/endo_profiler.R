@@ -269,14 +269,15 @@ gois_stats$all_GOIs |> lapply(select, c("SYMBOL", "Mean")) |>
   }) |> Reduce(\(x,y) merge(x,y, by="SYMBOL", all=TRUE), x=_) -> matrix_of_means
 
 # Plot and save the pairwise correlation Chart
+plot_label <- "Correlation_chart"
 r4tcpl::savePlots(
   \(){custom_pairs(matrix_of_means[-1], color = "steelblue4")},
   width_px = 2000,
-  figure_Name = "Correlation_chart",
+  figure_Name = plot_label,
   figure_Folder = out_dir)
 
 n <- dim(matrix_of_means)[2] - 1
-cat(paste0("\n", n, "-by-", n, " pairwise correlation chart has been saved."))
+cat(paste0("\nSaving: ", plot_label, " (", n, "-by-", n, ")"))
 
 # Merge the `average_expression` with the `matrix_of_means`, then sort by
 # decreasing average ICT expression (used as reference)
@@ -297,14 +298,21 @@ matrix_of_means |> pivot_longer(cols = !matches("SYMBOL"),
                                 names_to = "Source",
                                 values_to = "Mean") -> matrix_of_means
 
-# Save the 'expression fading plot' and save it
-fade_plot <- fadePlot(matrix_of_means)
-r4tcpl::savePlots(
-  \(){print(fade_plot)},
-  width_px = 2000,
-  figure_Name = "Fade_plot",
-  figure_Folder = out_dir)
-cat(paste0("\nA global expression fading plot has been saved."))
+# Make the 'expression fading plots'...
+fade_plots <- list(
+  Fade_plot_global   = fadePlot(matrix_of_means),
+  Fade_plot_ICs      = fadePlot(matrix_of_means |> filter(SYMBOL %in% ICs)),
+  Fade_plot_transRex = fadePlot(matrix_of_means |> filter(!SYMBOL %in% ICs)))
+# ...and save them
+for (name in names(fade_plots)) {
+  r4tcpl::savePlots(
+    \(){print(fade_plots[[name]])},
+    width_px = 2000,
+    figure_Name = name,
+    figure_Folder = out_dir)
+  cat(paste("\nSaving:", name))
+}
+cat("\n")
 
 # Functional Subsetting --------------------------------------------------------
 
@@ -328,6 +336,7 @@ for (file_name in names(subGOIs_list)) {
   # Subset and save as CSV
   average_expression |> filter(SYMBOL %in% subGOIs_list[[file_name]]) |>
     write.csv(file = file.path(out_dir, file_label), row.names = FALSE)
+  cat("\nSaving:", file_label)
   # Check for completeness
   if (length(setdiff(subGOIs_list[[file_name]],average_expression$SYMBOL)) > 0) {
     cat("\nWARNING by ", file_label, ":",
@@ -335,6 +344,7 @@ for (file_name in names(subGOIs_list)) {
     cat(setdiff(subGOIs_list[[file_name]],average_expression$SYMBOL), sep="\n  ")
   }
 }
+cat("\n")
 
 # --- END ----------------------------------------------------------------------
 echo(paste0("\n", attr(model, "own_name"), " is done!\n"), "green")
