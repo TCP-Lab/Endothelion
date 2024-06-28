@@ -28,7 +28,7 @@
 library(ggplot2)
 library(r4tcpl)
 library(dplyr, warn.conflicts = FALSE)
-# library(tidyr)
+library(tidyr)
 # library(httr)
 # library(AnnotationDbi)
 # library(org.Hs.eg.db)
@@ -238,7 +238,7 @@ gois_stats |> names() |> lapply(\(family_name) {
 
 # --- Meta-analysis ------------------------------------------------------------
 
-echo("\nSTEP 06 :: Model Synthesis", "green")
+echo("\nSTEP 06 :: Model Synthesis (Meta-analysis)", "green")
 
 slim_model |> geneStats(descriptive = eval(parse(text = descriptive)),
                         maic = "inclusive",
@@ -246,7 +246,10 @@ slim_model |> geneStats(descriptive = eval(parse(text = descriptive)),
 
 cat("\nRegenerating gene annotation from scratch...")
 # Change to `OrgDb_key="ENSEMBLTRANS"` when working at isoform level
-average_expression |> add_annotation(OrgDb_key="ENSEMBL") -> average_expression
+# NOTE: the `filter` step needs to get rid of possible duplicated entries
+#       arising from 1:many mapping between ENSG IDs and SYMBOLs
+average_expression |> add_annotation(OrgDb_key="ENSEMBL") |>
+  filter(SYMBOL %in% unlist(gois)) -> average_expression
 
 # Save full GOI set as CSV
 write.csv(average_expression,
@@ -254,106 +257,58 @@ write.csv(average_expression,
                     paste0(attr(model,"own_name"),"_AverExpress_ALL_GOIs.csv")),
           row.names = FALSE)
 
+# --- Between Series Correlation -----------------------------------------------
 
+echo("\nSTEP 07 :: Between Series Correlation", "green")
 
+# Get the mean expression values for all the series
+gois_stats$all_GOIs |> lapply(select, c("SYMBOL", "Mean")) |>
+  lapply(\(series) {
+    colnames(series)[colnames(series) == "Mean"] <- attr(series, "own_name")
+    return(series)
+  }) |> Reduce(\(x,y) merge(x,y, by="SYMBOL", all=TRUE), x=_) -> matrix_of_means
 
+# Plot and save the pairwise correlation Chart
+r4tcpl::savePlots(
+  \(){custom_pairs(matrix_of_means[-1], color = "steelblue4")},
+  width_px = 2000,
+  figure_Name = "Correlation_chart",
+  figure_Folder = out_dir)
 
-# --- correlation ----
+n <- dim(matrix_of_means)[2] - 1
+cat(paste0("\n", n, "-by-", n, " pairwise correlation chart has been saved."))
 
-# Correlation ScatterPlot Matrix (with fixed text size)
-custom_pairs <- function(data_set, color = "gray15") {
-  
-  # Customize lower panel (correlation values)
-  panel_cor <- function(x, y) {
-    default_usr <- par("usr")
-    on.exit(par(usr = default_usr))
-    par(usr = c(0, 1, 0, 1))
-    r <- round(cor(x, y), digits = 3)
-    text(0.5, 0.5, r, cex = 2)
-  }
-  
-  # Customize upper panel (scatter plots)
-  panel_points <- function(x, y) {
-    points(x, y, pch = 19, cex = 1, col = color)
-  }
-  
-  # Create the plots
-  pairs(data_set,
-        cex.labels = 3,
-        font.labels = 4,
-        lower.panel = panel_cor,
-        upper.panel = panel_points)
-}
-
-# Correlation ScatterPlot Matrix (with fixed text size)
-custom_pairs(data_set = data.frame(GSE138309 = gois_stats$all_GOIs$GSE138309$Mean,
-                                   GSE139133 = gois_stats$all_GOIs$GSE139133$Mean,
-                                   GSE195781 = gois_stats$all_GOIs$GSE195781$Mean,
-                                   GSE205739 = gois_stats$all_GOIs$GSE205739$Mean,
-                                   GSE76528 = gois_stats$all_GOIs$GSE76528$Mean),
-             color = "steelblue4")
-
-
-
-
-
-
-# Sort the average reference by decreasing ICT expression
+# Merge the `average_expression` with the `matrix_of_means`, then sort by
+# decreasing average ICT expression (used as reference)
+# NOTE: set the filter to 0 to plot all the GOIs
 average_expression |>
-  select(c("SYMBOL", "Mean")) |> arrange(desc(Mean)) -> reference
+  select(c("SYMBOL", "Mean")) |>
+  filter(Mean >= 0.1) |>
+  merge(matrix_of_means, by = "SYMBOL", all.y = FALSE) |>
+  arrange(desc(Mean)) -> matrix_of_means
 
 # Convert SYMBOL to a factor to ensure that the x-axis values follow the order
 # of the sorted dataframe instead of being alphabetically ordered
-reference$SYMBOL <- factor(reference$SYMBOL, levels = reference$SYMBOL)
+matrix_of_means$SYMBOL <- factor(matrix_of_means$SYMBOL,
+                                 levels = matrix_of_means$SYMBOL)
 
+# Melt the data frame (convert to long format, for ggplot)
+matrix_of_means |> pivot_longer(cols = !matches("SYMBOL"),
+                                names_to = "Source",
+                                values_to = "Mean") -> matrix_of_means
 
-gois_stats$all_GOIs$GSE138309 |> select(c("SYMBOL", "Mean")) -> df1
-gois_stats$all_GOIs$GSE139133 |> select(c("SYMBOL", "Mean")) -> df2
-gois_stats$all_GOIs$GSE195781 |> select(c("SYMBOL", "Mean")) -> df3
-
-# By using `levels(reference$SYMBOL)` as levels for all other factors ensures
-# that all of them will be plotted following the gene ranking of the reference
-# (i.e., the average) data frame.
-df1$SYMBOL <- factor(df1$SYMBOL, levels = levels(reference$SYMBOL))
-df2$SYMBOL <- factor(df2$SYMBOL, levels = levels(reference$SYMBOL))
-df3$SYMBOL <- factor(df3$SYMBOL, levels = levels(reference$SYMBOL))
-
-# Combine all data into one dataframe for easier plotting
-combined <- bind_rows(
-  mutate(reference, Source = "Reference"),
-  mutate(df1, Source = "DF1"),
-  mutate(df2, Source = "DF2"),
-  mutate(df3, Source = "DF3")
-)
-
-
-# Plot the reference dataframe
-# Prepare the Frame
-gg_frame <-
-  ggplot(combined, aes(x = SYMBOL, y = Mean, group = Source, color = Source)) + 
-  theme_bw(base_size = 15, base_rect_size = 1.5) +
-  theme(axis.text.x = element_text(size = 10, angle = 90,
-                                   vjust = 0.5, hjust = 1),
-        axis.text.y = element_text(size = 14),
-        axis.title = element_text(size = 14),
-        legend.position = "none") +
-  xlab("Genes of Interest") +
-  ylab(substitute(log[2]*(x+1), list(x = "TPM"))) +
-  ggtitle(label = "Fading Trend")
-
-gg_points <- gg_frame + geom_point() # + geom_line()
-
-
-
-print(gg_points)
-
-
-
-
-
-
+# Save the 'expression fading plot' and save it
+fade_plot <- fadePlot(matrix_of_means)
+r4tcpl::savePlots(
+  \(){print(fade_plot)},
+  width_px = 2000,
+  figure_Name = "Fade_plot",
+  figure_Folder = out_dir)
+cat(paste0("\nA global expression fading plot has been saved."))
 
 # Functional Subsetting --------------------------------------------------------
+
+echo("\nSTEP 08 :: Functional Subsetting", "green")
 
 # Get the list of functional subsets to extract
 subGOIs_prefix <- "ICT_subset_"
@@ -381,19 +336,8 @@ for (file_name in names(subGOIs_list)) {
   }
 }
 
-
-
 # --- END ----------------------------------------------------------------------
 echo(paste0("\n", attr(model, "own_name"), " is done!\n"), "green")
-
-
-
-
-
-
-
-
-
 
 
 

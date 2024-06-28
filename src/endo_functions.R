@@ -188,22 +188,74 @@ add_annotation <- function(gene_matrix, OrgDb_key = "ENSEMBL") {
   # Collapse the duplicated entries in the ID column and concatenate the
   # (unique) values in the remaining columns using a comma as a separator to
   # prevent rows from being added in the following join step.
-  if (anyDuplicated(annots[,OrgDb_key])) {
-    cat("\nWARNING:\n Multiple annotation entries corresponding to a single\n",
-        OrgDb_key, "ID will be collapsed by a comma separator.\n")
-    annots <- aggregate(. ~ get(OrgDb_key),
-                        data = annots,
-                        FUN = \(x)paste(unique(x), collapse = ","),
-                        na.action = NULL)[,-1]
-  }
+  #if (anyDuplicated(annots[,OrgDb_key])) {
+  #  cat("\nWARNING:\n Multiple annotation entries corresponding to a single\n",
+  #      OrgDb_key, "ID will be collapsed by a comma separator.\n")
+  #  annots <- aggregate(. ~ get(OrgDb_key),
+  #                      data = annots,
+  #                      FUN = \(x)paste(unique(x), collapse = ","),
+  #                      na.action = NULL)[,-1]
+  #}
   colnames(annots)[colnames(annots) == OrgDb_key] <- "IDs" 
   gene_matrix <- merge(annots, gene_matrix, by = "IDs", all.y = TRUE)
+}
+
+# Correlation ScatterPlot Matrix (with fixed text size)
+custom_pairs <- function(data_set, color = "gray15") {
+  # Customize lower panel (correlation values)
+  panel_cor <- function(x, y) {
+    default_usr <- par("usr")
+    on.exit(par(usr = default_usr))
+    par(usr = c(0, 1, 0, 1))
+    r <- round(cor(x, y), digits = 3)
+    text(0.5, 0.5, r, cex = 5)
+  }
+  # Customize upper panel (scatter plots)
+  panel_points <- function(x, y) {
+    points(x, y, pch = 19, cex = 1, col = color)
+  }
+  # Create the plots
+  pairs(data_set,
+        cex.labels = 6,
+        font.labels = 4,
+        lower.panel = panel_cor,
+        upper.panel = panel_points)
 }
 
 
 
 
-
-
-
+fadePlot <- function(matrix_of_means) {
+  # Prepare the Frame
+  gg_frame <-
+    ggplot(matrix_of_means, aes(x = SYMBOL,
+                                y = Mean,
+                                group = Source,
+                                color = Source)) + 
+    theme_bw(base_size = 15, base_rect_size = 1.5) +
+    theme(axis.text.x = element_text(size = 10, angle = 90,
+                                     vjust = 0.5, hjust = 1),
+          axis.text.y = element_text(size = 14),
+          axis.title = element_text(size = 14),
+          legend.position = "inside",
+          legend.position.inside = c(0.8, 0.6)) +
+    xlab("Genes of Interest") +
+    ylab(substitute(log[2]*(x+1), list(x = "TPM"))) +
+    ggtitle(label = "Expression Fading Plot")
+  
+  # Add the data points and print
+  gg_points <- gg_frame + geom_point() # + geom_line()
+  
+  # Add the Expression Threshold
+  gg_thr <- gg_points +
+    geom_hline(yintercept = 1,
+               linetype = "dashed",
+               color = "gray17",
+               linewidth = 1)
+}
+  
+  
+  
+  
+  
 
