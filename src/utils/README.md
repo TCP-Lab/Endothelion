@@ -41,14 +41,14 @@ cd ~/WORKS/Endothelion/Lines/hCMEC_D3/GSE205739
 	qcfastq --tool=MultiQC .
 	```
 1. Then I regenerated the assembled expression matrix by running the latest
-	`assembler.R` (v.1.6.0) to have GSE-prefixed count matrix (i.e.,
+	`assembler.R` version to have GSE-prefixed count matrix (i.e.,
 	`GSE205739_CountMatrix_genes_TPM.tsv`).
 	```bash
 	countfastq -n .
 	```
 1. Also I added the metadata, as retrieved from ENA database, with the `extra`
 	column filled with `1` by default, which I replaced with `0` for those
-	non-control samples not included in the Endothelion reanalysis.
+	non-control samples not to be included in Endothelion reanalysis.
 	```bash
 	metaharvest -x=1 -e GSE205739 > GSE205739_meta.csv
 	```
