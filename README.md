@@ -49,9 +49,9 @@ found in the header of the R script file `./src/endo_profiler.R`.
 
 ## hCMEC/D3 (Blood-Brain Barrier Cell Line)
 ### Query
-DB: [NCBI SRA](https://www.ncbi.nlm.nih.gov/sra)
-Search: `hCMEC D3`
-Results: 12 _BioProjects_
+- DB: [NCBI SRA](https://www.ncbi.nlm.nih.gov/sra)
+- Search: `hCMEC D3`
+- Results: 12 _BioProjects_
 
 ### Included Studies
 | ENA BioProject ID | Study Alias   |
@@ -70,7 +70,7 @@ Results: 12 _BioProjects_
 |:-----------------:|:-------------:|:--------------------------:|
 | PRJNA802135       | GSE195781     | duplicated/bad runs        |
 | PRJNA607654       | GSE145581     | miRNA-Seq                  |
-| PRJNA1073892      | GSE255171     | Regulatory T cells (Tregs) |
+| PRJNA1073892      | GSE255171     | regulatory T cells (Tregs) |
 | PRJNA307651       | GSE76530      | miRNA-Seq                  |
 
 #### The PRJNA802135/GSE195781 Case
