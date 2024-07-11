@@ -52,6 +52,7 @@ found in the header of the R script file `./src/endo_profiler.R`.
 - DB: [NCBI SRA](https://www.ncbi.nlm.nih.gov/sra)
 - Search: `hCMEC D3`
 - Results: 12 _BioProjects_
+- Zenodo: https://zenodo.org/records/12687137
 
 ### Included Studies
 | ENA BioProject ID | Study Alias   |

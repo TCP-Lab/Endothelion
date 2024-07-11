@@ -2,12 +2,12 @@
 
 # Endothelion Project
 #
-# Assumptions and format the of expected arguments.
+# Assumptions and formats of expected arguments.
 #
-# This new version of 'endo_profiler' leverages S3 xSeries and xModel classes as
-# provided by the SeqLoader package (https://github.com/TCP-Lab/SeqLoader). For
-# this reason the formal requirements on data are the same of SeqLoader, the
-# only additions being that counts are supposed to be
+# This second version of 'endo_profiler' leverages xSeries and xModel S3 classes
+# as provided by the SeqLoader package (https://github.com/TCP-Lab/SeqLoader).
+# For this reason, the formal requirements on data are the same of SeqLoader,
+# the only additions for Endothelion being that counts are supposed to be
 #  - already normalized in TPM;
 #  - provided with gene symbol annotation ('SYMBOL' column);
 #
