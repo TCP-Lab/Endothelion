@@ -80,18 +80,24 @@ the project directory, just run
 ./src/utils/make_test_dataset.sh
 ```
 and the script will
-1. make the target directory `./data/in/Lines/hCMEC_D` (if it doesn't exist yet)
-	or, upon user confirmation, clean it by removing possible files already
-	present therein;
+1. make the target directory `./data/in/Lines/test_hCMEC_D3` (if it doesn't
+	exist yet) or, upon user confirmation, clean it by removing possible files
+	already present therein;
 1. download 2 _Endothelion_ count matrices (and related metadata) from _Zenodo_,
 	namely GEO series ___GSE138309___ and ___GSE139133___ featuring just 3 and 2
 	control samples, respectively;
 1. further resize them row-wise by keeping only the GOI entries and 5000 more
 	random genes (actually, this last step is performed by the R script of the
-	same name).
+	same name);
 1. save both these lightweight count matrices and a copy of the related metadata
-	after prepending a `test_` string to their names (according to the
-	`[data.profiles.test]` settings in `kerblam.toml`).
+	after prepending a `mini` string to their names.
+
+According to the `[data.profiles.test]` settings in `kerblam.toml`,
+```bash
+kerblam run --profile test hCMEC_D3
+```
+will run the selected pipeline (_hCMEC_D3_ in this case) using `test_hCMEC_D3`
+as the target folder in place of the standard `hCMEC_D3` one.
 
 __NOTE 1:__
 Since some of the 5000 random genes could be already present among the GOIs, the
@@ -100,14 +106,9 @@ is set at the beginning of the R script (`set.seed(7)`) to ensure
 reproducibility.
 
 __NOTE 2:__
-When running the _hCMEC_D3_ (or _hCMEC_D3x_) pipeline using the test data set,
-namely
-```bash
-kerblam run --profile test hCMEC_D3
-```
-the warnings _Bad TPM normalization in series..._ will be thrown. Clearly this
-is expected and perfectly normal, given the row-wise reduction of the count
-matrices.
+When running the pipeline using the test data set, the warnings _Bad TPM
+normalization in series..._ will be thrown. Clearly this is expected and
+perfectly normal, given the row-wise reduction of the count matrices.
 
 __NOTE 3:__
 For both count matrices, a further warning will be issued during the pipeline
@@ -119,8 +120,9 @@ WARNING:
   ANO5
 ```
 Again, this is expected and perfectly normal, since count matrices were
-intersected with the list of GOIS during the row-reduction step _without_
-exploding their _Gene Symbol_ entries (as the `endo_profiler.R` script does),
-thus loosing the `ANO5,LOC102723370` and `CACNA1C,CACNA1C-IT2` genes. I kept
-this fortuitous feature to check `endo_profiler.R` capability of detecting
-possible missing GOIs among the genes included in the count matrix. 
+intersected with the list of GOIs during the row-reduction step _without_
+exploding their _Gene Symbol_ entries (as the `endo_profiler.R` script does
+instead, using the _SeqLoader_), thus loosing the two genes `ANO5,LOC102723370`
+and `CACNA1C,CACNA1C-IT2`. I kept this fortuitous feature to check for
+`endo_profiler.R`/_SeqLoader_ capability of detecting possible missing GOIs
+among the genes included in the count matrix. 
