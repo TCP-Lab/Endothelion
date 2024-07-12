@@ -9,7 +9,16 @@ Large-scale comparison of ICT expression in healthy endothelium.
 ### R
 - ggplot2 (>= 3.5.0)
 - tidyr (>= 1.3.1)
+- dplyr (>= 1.1.4)
+- httr (>= 1.4.7)
+- AnnotationDbi (>= 1.60.2)
+- org.Hs.eg.db (>= 3.16.0)
+- PCAtools (>= 2.10.0)
 - r4tcpl (>= 1.5.1)
+
+### SeqLoader
+- rlang (>= 1.1.3)
+- magrittr (>= 2.0.3)
 
 ## Phase I: Absolute Assessment
 The first phase of __Endothelion__ was designed to profile (i.e., to provide a
