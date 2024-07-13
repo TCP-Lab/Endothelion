@@ -47,13 +47,13 @@ source("./src/endo_functions.R")
 # --- Input Parsing ------------------------------------------------------------
 
 # General error message
-error_msg <- "\nERROR by endo_profiler_x.R\n"
+error_msg <- "\nERROR by endo_profiler.R\n"
 
 # Check if the correct number of arguments is provided from command-line
 if (length(commandArgs(trailingOnly = TRUE)) != 6) {
   cat(error_msg,
       "One or more arguments are missing. Usage:\n\n",
-      "Rscript endo_profiler_x.R <in_path> <central_tendency> \\\n",
+      "Rscript endo_profiler.R <in_path> <central_tendency> \\\n",
       "                        <threshold_adapt> <threshold_value> \\\n",
       "                        <GOIs> <out_dir>\n\n")
   quit(status = 1)
@@ -171,9 +171,12 @@ factTable(slim_model)
 # Get series-specific stats for all GOIs and save as CSV
 echo("\nSTEP 04 :: Per-Series Stats", "green")
 slim_model |> lapply(\(series) {
-  series_ID <- attr(series, "own_name")
   series |> geneStats(annot = TRUE) -> all_gois_stats
+  series_ID <- attr(series, "own_name")
   report_name <- paste0(series_ID, "_profileReport.csv")
+  # Series sub-dirs should be already there from STEP 00, but just in case...
+  dir.create(file.path(out_dir, series_ID),
+             recursive = TRUE, showWarnings = FALSE)
   cat("\nSaving:", report_name)
   write.csv(all_gois_stats,
             file.path(out_dir, series_ID, report_name),
