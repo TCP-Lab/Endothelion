@@ -1,6 +1,5 @@
 {
     "GOIs": "./data/in/ICT_set.csv",
-    "subGOIs_prefix": "ICT_subset_",
     "central_tendency": "mean",
     "threshold_adapt": false,
     "threshold_value": 1

@@ -18,7 +18,6 @@ target_path="$1"
 # Set variables from runtime option JSON file
 OPTS="./data/in/runtime_options.json"
 GOIs="$(cat $OPTS | jq -r ".GOIs")"
-subGOIs_prefix="$(cat $OPTS | jq -r ".subGOIs_prefix")"
 central_tendency="$(cat $OPTS | jq -r ".central_tendency")"
 
 # --- Main program -------------------------------------------------------------
@@ -44,7 +43,7 @@ do
 		"$endo_model" \
 		"$central_tendency" \
 		"$GOIs" \
-		"$subGOIs_prefix" \
+		"ICT_subset_" \
 		"$endo_model"
 	echo
 	((counter++))
