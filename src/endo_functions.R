@@ -1,26 +1,5 @@
 
 
-# Colored echo for on-screen log in Bash CLI
-echo <- function(text, color = "white") {
-  # Check the operating system
-  os_type <- Sys.info()["sysname"]
-  if (os_type == "Windows") {
-    warning("Colored echo is just for Bash!")
-    cat(text, "\n")
-  } else if (os_type == "Linux") {
-    if      (color == "red")     {col <- "\\e[1;31m"}
-    else if (color == "green")   {col <- "\\e[1;32m"}
-    else if (color == "yellow")  {col <- "\\e[1;33m"}
-    else if (color == "blue")    {col <- "\\e[1;34m"}
-    else if (color == "magenta") {col <- "\\e[1;35m"}
-    else if (color == "cyan")    {col <- "\\e[1;36m"}
-    else if (color == "white")   {col <- "\\e[1;37m"}
-    end <- "\\e[0m"
-    system2("echo", args = c("-e", paste0("\"", col, text, end, "\"")))
-  } else {
-    stop("Running on an unknown OS\n")
-  }
-}
 
 # Borrowed from SeqLoader
 # Any named list knows the names of all the elements it contains (under its
