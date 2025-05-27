@@ -1,6 +1,7 @@
 # Local data and manuscript folders
 /data/out/
 /data/in/Lines/
+/data/in/MTP-DB/
 /manuscript/
 
 # Sublime Text project files

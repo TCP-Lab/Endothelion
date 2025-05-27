@@ -1,10 +1,14 @@
 [meta]
-version = "1.0.0-rc.3"
+version = "1.2.1"
 
 [data.profiles.test]
 "Lines/hCMEC_D3" = "Lines/test_hCMEC_D3"
 
 [data.remote]
+# MTP-DB
+"https://github.com/TCP-Lab/MTP-DB/releases/download/1.25.16/MTPDB_v1.25.16.sqlite.gz" = "MTP-DB/MTPDB.sqlite.gz"
+
+# GEO/ENA datasets recomputes from Zenodo
 "https://zenodo.org/records/12729454/files/GSE138309_CountMatrix_genes_TPM.tsv" = "Lines/hCMEC_D3/GSE138309_CountMatrix_genes_TPM.tsv"
 "https://zenodo.org/records/12729454/files/GSE139133_CountMatrix_genes_TPM.tsv" = "Lines/hCMEC_D3/GSE139133_CountMatrix_genes_TPM.tsv"
 "https://zenodo.org/records/12729454/files/GSE187565_CountMatrix_genes_TPM.tsv" = "Lines/hCMEC_D3/GSE187565_CountMatrix_genes_TPM.tsv"

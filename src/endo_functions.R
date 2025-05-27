@@ -13,7 +13,7 @@ set_own_names <- function(parent_list) {
   }) |> setNames(names(parent_list)) # Also keep original names in parent list
 }
 
-# Compute threshold from cont distribution
+# Compute threshold from count distribution
 threshold <- function(xSeries,
                       all_names,
                       adapt = threshold_adapt,
