@@ -311,7 +311,7 @@ matrix_of_means |> pivot_longer(cols = !matches("SYMBOL"),
                                 values_to = "Mean") -> matrix_of_means
 
 # Make the 'expression fading plots'...
-ct <- "lines" # chart_type argument
+ct <- "95CI" # chart_type argument
 profile_plots <- list(
   Profile_global = profilePlot(matrix_of_means, ct),
   Profile_ICs    = profilePlot(matrix_of_means |> filter(SYMBOL %in% ICs), ct),

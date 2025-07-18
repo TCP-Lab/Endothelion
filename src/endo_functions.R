@@ -247,6 +247,8 @@ profilePlot <- function(matrix_of_means, chart_type = "boxplot", thr = 1) {
             geom_line(
                 aes(group = Source,
                     color = Source))
+    } else {
+        cat("\nUndefined 'chart_type'")
     }
     
     # Add a Threshold
