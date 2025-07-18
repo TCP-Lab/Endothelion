@@ -8,6 +8,7 @@ Large-scale comparison of ICT expression in healthy endothelium.
 
 ### R
 - ggplot2 (>= 3.5.0)
+- Hmisc (>= 5.2-3)
 - tidyr (>= 1.3.1)
 - dplyr (>= 1.1.4)
 - httr (>= 1.4.7)

@@ -201,40 +201,77 @@ custom_pairs <- function(data_set, color = "gray15") {
         upper.panel = panel_points)
 }
 
-
-
-
-fadePlot <- function(matrix_of_means) {
-  # Prepare the Frame
-  gg_frame <-
-    ggplot(matrix_of_means, aes(x = SYMBOL,
-                                y = Mean,
-                                group = Source,
-                                color = Source)) + 
-    theme_bw(base_size = 15, base_rect_size = 1.5) +
-    theme(axis.text.x = element_text(size = 10, angle = 90,
-                                     vjust = 0.5, hjust = 1),
-          axis.text.y = element_text(size = 14),
-          axis.title = element_text(size = 14),
-          legend.text = element_text(size = 14),
-          legend.position = c(0.8, 0.6)) + #legend.position.inside = c(0.8, 0.6)) +
-    xlab("Genes of Interest") +
-    ylab(substitute(log[2]*(x+1), list(x = "TPM"))) +
-    ggtitle(label = "Expression Fading Plot")
-  
-  # Add the data points and print
-  gg_points <- gg_frame + geom_point() # + geom_line()
-  
-  # Add the Expression Threshold
-  gg_thr <- gg_points +
-    geom_hline(yintercept = 1,
-               linetype = "dashed",
-               color = "gray17",
-               linewidth = 1)
+profilePlot <- function(matrix_of_means, chart_type = "boxplot", thr = 1) {
+    
+    # Specify Data
+    master_plot <-
+        ggplot(matrix_of_means,
+               aes(x = SYMBOL,
+                   y = Mean,
+                   group = SYMBOL))
+    
+    # Specify Graphic Elements
+    if (chart_type == "boxplot") {
+        master_plot <- master_plot +
+            geom_boxplot(
+                width = 0.7,
+                fill = "mediumpurple1",
+                color = "gray20",   # darker border
+                alpha = 0.5) +
+            geom_jitter(
+                aes(color = Source),
+                width = 0.2,
+                size = 1,
+                alpha = 0.6)
+    } else if (chart_type == "95CI") {
+        master_plot <- master_plot +
+            stat_summary(
+                fun.data  = mean_cl_normal,
+                fun.args  = list(conf.int = 0.95),
+                geom      = "errorbar",
+                width     = 0.2,
+                color     = "black",
+                linewidth = 1) +
+            # point at the mean
+            stat_summary(
+                fun   = mean,
+                geom  = "point",
+                size  = 3,
+                color = "darkred")
+    } else if (chart_type == "points") {
+        master_plot <- master_plot +
+            geom_point(
+                aes(color = Source))
+    } else if (chart_type == "lines") {
+        master_plot <- master_plot +
+            geom_line(
+                aes(group = Source,
+                    color = Source))
+    }
+    
+    # Add a Threshold
+    master_plot <- master_plot +
+        geom_hline(yintercept = thr,
+                   linetype = "dashed",
+                   color = "gray17",
+                   linewidth = 1)
+    
+    # Flip the plot
+    master_plot <- master_plot +
+        scale_x_discrete(limits = rev(levels(factor(matrix_of_means$SYMBOL)))) +
+        coord_flip()
+    
+    # Specify Frame Attributes
+    master_plot <- master_plot +
+        theme_bw(base_size = 15, base_rect_size = 1.5) +
+        theme(axis.text.x = element_text(size = 14),
+              axis.text.y = element_text(size = 14),
+              axis.title = element_text(size = 18),
+              legend.text = element_text(size = 16),
+              legend.position = c(0.8, 0.1)) + #legend.position.inside = c(0.8, 0.6)) +
+        xlab("Genes of Interest") +
+        ylab(substitute(log[2]*(x+1), list(x = "TPM"))) +
+        ggtitle(label = "Expression Profile Plot")
 }
-  
-  
-  
-  
-  
 
+  

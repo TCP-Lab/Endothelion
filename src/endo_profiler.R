@@ -67,6 +67,15 @@ threshold_value <- as.numeric(commandArgs(trailingOnly = TRUE)[4])
 gois_file <- commandArgs(trailingOnly = TRUE)[5]
 out_dir <- commandArgs(trailingOnly = TRUE)[6]
 
+# # # live debug (from the project root directory)
+# target_dir <- "./data/in/Lines/test_hCMEC_D3/"
+# descriptive <- "MEAN"
+# threshold_adapt <- "false"
+# threshold_value <- 1
+# gois_file <- "./data/in/ICT_set.csv"
+# out_dir <- "./data/out/Lines/test_hCMEC_D3/"
+
+
 # Check if the target directory exists
 if (! dir.exists(target_dir)) {
   cat(error_msg,
@@ -74,7 +83,7 @@ if (! dir.exists(target_dir)) {
   quit(status = 2)
 }
 
-# Check adaptive threshold logical flag
+# Check central tendency descriptor
 if (! descriptive %in% c("MEAN", "MEDIAN", "NWMEAN")) {
   cat(error_msg,
       " Invalid \'descriptive\' parameter \'", descriptive, "\'.\n",
@@ -287,7 +296,7 @@ cat(paste0("\nSaving: ", plot_label, " (", n, "-by-", n, ")"))
 # NOTE: set the filter to 0 to plot all the GOIs
 average_expression |>
   select(c("SYMBOL", "Mean")) |>
-  filter(Mean >= 0.1) |>
+  filter(Mean >= 1) |>
   merge(matrix_of_means, by = "SYMBOL", all.y = FALSE) |>
   arrange(desc(Mean)) -> matrix_of_means
 
@@ -302,18 +311,20 @@ matrix_of_means |> pivot_longer(cols = !matches("SYMBOL"),
                                 values_to = "Mean") -> matrix_of_means
 
 # Make the 'expression fading plots'...
-fade_plots <- list(
-  Fade_plot_global   = fadePlot(matrix_of_means),
-  Fade_plot_ICs      = fadePlot(matrix_of_means |> filter(SYMBOL %in% ICs)),
-  Fade_plot_transRex = fadePlot(matrix_of_means |> filter(!SYMBOL %in% ICs)))
+ct <- "lines" # chart_type argument
+profile_plots <- list(
+  Profile_global = profilePlot(matrix_of_means, ct),
+  Profile_ICs    = profilePlot(matrix_of_means |> filter(SYMBOL %in% ICs), ct),
+  Profile_trans  = profilePlot(matrix_of_means |> filter(!SYMBOL %in% ICs), ct))
 # ...and save them
-for (name in names(fade_plots)) {
+for (name in names(profile_plots)) {
   r4tcpl::savePlots(
-    \(){print(fade_plots[[name]])},
-    width_px = 2000,
-    figure_Name = name,
+    \(){print(profile_plots[[name]])},
+    width_px = 1024,
+    ratio = 1/sqrt(2), # A4 ratio
+    figure_Name = paste0(name, "_", ct),
     figure_Folder = out_dir)
-  cat(paste("\nSaving:", name))
+  cat(paste("\nSaving:", name, "-", ct))
 }
 cat("\n")
 
