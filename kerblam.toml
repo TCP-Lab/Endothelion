@@ -6,7 +6,7 @@ version = "1.2.1"
 
 [data.remote]
 # MTP-DB
-"https://github.com/TCP-Lab/MTP-DB/releases/download/1.25.16/MTPDB_v1.25.16.sqlite.gz" = "MTP-DB/MTPDB.sqlite.gz"
+"https://github.com/TCP-Lab/MTP-DB/releases/download/1.25.24/MTPDB_v1.25.24.sqlite.gz" = "MTP-DB/MTPDB.sqlite.gz"
 
 # GEO/ENA datasets recomputes from Zenodo
 "https://zenodo.org/records/12729454/files/GSE138309_CountMatrix_genes_TPM.tsv" = "Lines/hCMEC_D3/GSE138309_CountMatrix_genes_TPM.tsv"

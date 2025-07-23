@@ -267,10 +267,10 @@ profilePlot <- function(matrix_of_means, chart_type = "boxplot", thr = 1) {
     master_plot <- master_plot +
         theme_bw(base_size = 15, base_rect_size = 1.5) +
         theme(axis.text.x = element_text(size = 14),
-              axis.text.y = element_text(size = 14),
+              axis.text.y = element_text(size = 10),
               axis.title = element_text(size = 18),
               legend.text = element_text(size = 16),
-              legend.position = c(0.8, 0.1)) + #legend.position.inside = c(0.8, 0.6)) +
+              legend.position.inside = c(0.8, 0.1)) +
         xlab("Genes of Interest") +
         ylab(substitute(log[2]*(x+1), list(x = "TPM"))) +
         ggtitle(label = "Expression Profile Plot")

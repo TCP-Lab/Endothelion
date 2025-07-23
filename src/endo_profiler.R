@@ -1,4 +1,4 @@
-#!/usr/bin/env -S Rscript --vanilla
+#!/usr/bin/env Rscript
 
 # Endothelion Project
 #
@@ -29,9 +29,9 @@ library(ggplot2)
 library(r4tcpl)
 library(dplyr, warn.conflicts = FALSE)
 library(tidyr)
+library(DBI)
+library(RSQLite)
 # library(httr)
-# library(AnnotationDbi)
-# library(org.Hs.eg.db)
 
 # Ugly temporary solution while waiting to package the SeqLoader
 dest_file <- "./src/seq_loader.R"
@@ -50,12 +50,12 @@ source("./src/endo_functions.R")
 error_msg <- "\nERROR by endo_profiler.R\n"
 
 # Check if the correct number of arguments is provided from command-line
-if (length(commandArgs(trailingOnly = TRUE)) != 6) {
+if (length(commandArgs(trailingOnly = TRUE)) != 7) {
   cat(error_msg,
       "One or more arguments are missing. Usage:\n\n",
       "Rscript endo_profiler.R <in_path> <central_tendency> \\\n",
       "                        <threshold_adapt> <threshold_value> \\\n",
-      "                        <GOIs> <out_dir>\n\n")
+      "                        <GOIs> <db_path> <out_dir>\n\n")
   quit(status = 1)
 }
 
@@ -65,16 +65,18 @@ descriptive <- toupper(commandArgs(trailingOnly = TRUE)[2])
 threshold_adapt <- commandArgs(trailingOnly = TRUE)[3]
 threshold_value <- as.numeric(commandArgs(trailingOnly = TRUE)[4])
 gois_file <- commandArgs(trailingOnly = TRUE)[5]
-out_dir <- commandArgs(trailingOnly = TRUE)[6]
+db_path <- commandArgs(trailingOnly = TRUE)[6]
+out_dir <- commandArgs(trailingOnly = TRUE)[7]
 
-# # # live debug (from the project root directory)
+# # Interactive debug (from the project root directory)
 # target_dir <- "./data/in/Lines/test_hCMEC_D3/"
+# target_dir <- "./data/in/Lines/hCMEC_D3/"
 # descriptive <- "MEAN"
 # threshold_adapt <- "false"
 # threshold_value <- 1
-# gois_file <- "./data/in/ICT_set.csv"
+# gois_file <- "./data/in/ICT_set_v2.csv"
+# db_path <- "./data/MTPDB.sqlite"
 # out_dir <- "./data/out/Lines/test_hCMEC_D3/"
-
 
 # Check if the target directory exists
 if (! dir.exists(target_dir)) {
@@ -113,6 +115,13 @@ if (! file.exists(gois_file)) {
   cat(error_msg,
       " File \'", gois_file, "\' does not exist.\n", sep = "")
   quit(status = 6)
+}
+
+# Check if the list of the Genes of Interest (GOIs) exists.
+if (! file.exists(db_path)) {
+    cat(error_msg,
+        " File \'", db_path, "\' does not exist.\n", sep = "")
+    quit(status = 7)
 }
 
 # --- xModel Loading -----------------------------------------------------------
@@ -175,6 +184,27 @@ model |> subsetGenes("SYMBOL", gois) -> slim_model
 echo("\nSlim model facts", "yellow")
 factTable(slim_model)
 
+# Endothelion works at SYMBOL level. Remove possible duplicated gene symbols
+# (i.e., multiple IDs mapping to the same SYMBOL) by keeping the most expressed
+# one. To do this, sort duplicated SYMBOLS by descending (grand) 'Mean' and use
+# 'distinct' to keep the first entry only.
+#
+# NOTE: here slim_model[[1]]$annotation is used for annotation, while waiting
+#       for 'Model-level annotation synthesis'.
+dnues(slim_model[[1]]$annotation$SYMBOL)[1] -> duplicated_SYMBOLS
+if (duplicated_SYMBOLS > 0) {
+    cat("\n", duplicated_SYMBOLS, "duplicated gene symbol(s) found! Collapsing...\n")
+    
+    merge(slim_model[[1]]$annotation, geneStats(slim_model),
+          by = "IDs", all.y = TRUE) |>
+        arrange(SYMBOL, desc(Mean)) |> distinct(SYMBOL, .keep_all = TRUE) |>
+        select(IDs) -> IDs_of_unique_SYMBOLs
+    
+    subsetGenes(slim_model, "IDs", IDs_of_unique_SYMBOLs) -> slim_model
+    echo("\nSlim model facts", "yellow")
+    factTable(slim_model)
+}
+
 # --- Per-Series Stats ---------------------------------------------------------
 
 # Get series-specific stats for all GOIs and save as CSV
@@ -196,38 +226,73 @@ cat("\n")
 
 # --- Bar Charting -------------------------------------------------------------
 
-# Make subgroups
-# NOTE: use dplyr::filter instead of base::subset to preserve attributes!
+# Make subgroups by retrieving data from the MTP-DB
+
+if (Sys.info()["sysname"] == "Windows") {
+    # Can't access the DB directly on WSL when running from Windows...
+    db_path <- file.path(Sys.getenv("USERPROFILE"), "Desktop", "MTPDB.sqlite")
+    file.copy(from = "./data/MTPDB.sqlite", to = db_path)
+}
+
+# Connect to the MTP-DB
+connection <- dbConnect(SQLite(), dbname = db_path)
+
+# Pores (Ion Channels + AQPs)
+query_pores <-
+    "SELECT DISTINCT
+    	gene_names.hugo_gene_symbol
+    FROM
+    	channels JOIN gene_names ON channels.ensg = gene_names.ensg
+    UNION SELECT DISTINCT
+    	gene_names.hugo_gene_symbol
+    FROM
+    	aquaporins JOIN gene_names ON aquaporins.ensg = gene_names.ensg"
+
+# Transporters (SLCs + pumps)
+query_trans <-
+    "SELECT DISTINCT
+    	gene_names.hugo_gene_symbol
+    FROM
+    	solute_carriers JOIN gene_names ON solute_carriers.ensg = gene_names.ensg
+    UNION SELECT DISTINCT
+    	gene_names.hugo_gene_symbol
+    FROM
+    	pumps JOIN gene_names ON pumps.ensg = gene_names.ensg"
+
+# Make the calls
+pores <- dbGetQuery(connection, query_pores)
+trans <- dbGetQuery(connection, query_trans)
+
+# Check sets here!!! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Disconnect from the MTP-DB
+dbDisconnect(connection)
+
+# Apply patches (for MTP-DB ver. 1.25.24)
+pores |> unlist() |> c("CATSPERG",
+                       "CATSPERB",
+                       "CATSPERD",
+                       "CATSPERE",
+                       "CATSPERZ") |> unname() -> pores
+trans |> unlist() |> c("SLC4A6") |> unname() -> trans
 
 # Only expressed (aka "high") GOIs
 all_gois_stats |> names() |> sapply(\(series_name) {
     all_gois_stats[[series_name]] |> filter(Mean > thr[[series_name]])
-  }, simplify = FALSE, USE.NAMES = TRUE) -> high_gois_stats
+}, simplify = FALSE, USE.NAMES = TRUE) -> high_gois_stats
 
-# A (temporary) patch for the TGS dataset from r4tcpl v.1.5.1
-patch4TGS <- c("MCUB",
-               "MCUR1",
-               "KCNRG",
-               "KCNIP1",
-               "KCNIP2",
-               "KCNIP3",
-               "KCNIP4",
-               "CATSPERE",
-               "CATSPERZ")
-ICs <- c(TGS$ICs, patch4TGS)
-trans <- TGS$trans
-
-# Only expressed ICTs, ICs, transporters, and receptors (GPCRs and RTKs)
-high_gois_stats |> lapply(filter, SYMBOL %in% c(ICs, trans)) -> high_ICT_stats
-high_gois_stats |> lapply(filter, SYMBOL %in% ICs) -> high_IC_stats
+# Only expressed ICTs, pores, transporters, and receptors (GPCRs and RTKs)
+# NOTE: use dplyr::filter instead of base::subset to preserve attributes!
+high_gois_stats |> lapply(filter, SYMBOL %in% c(pores, trans)) -> high_ICT_stats
+high_gois_stats |> lapply(filter, SYMBOL %in% pores) -> high_pores_stats
 high_gois_stats |> lapply(filter, SYMBOL %in% trans) -> high_trans_stats
-high_gois_stats |> lapply(filter, !SYMBOL %in% c(ICs, trans)) -> high_rex_stats
+high_gois_stats |> lapply(filter, !SYMBOL %in% c(pores, trans)) -> high_rex_stats
 
 # Make a comprehensive named structure (list of lists)
 gois_stats <- list(all_GOIs = all_gois_stats,
                    high_GOIs = high_gois_stats,
                    high_ICTs = high_ICT_stats,
-                   high_ICs = high_IC_stats,
+                   high_pores = high_pores_stats,
                    high_Transporters = high_trans_stats,
                    high_Receptors = high_rex_stats)
 
@@ -256,12 +321,20 @@ slim_model |> geneStats(descriptive = eval(parse(text = descriptive)),
                         maic = "inclusive",
                         annot = FALSE) -> average_expression
 
-cat("\nRegenerating gene annotation from scratch...")
-# Change to `OrgDb_key="ENSEMBLTRANS"` when working at isoform level
-# NOTE: the `filter` step needs to get rid of possible duplicated entries
-#       arising from 1:many mapping between ENSG IDs and SYMBOLs
-average_expression |> add_annotation(OrgDb_key="ENSEMBL") |>
-  filter(SYMBOL %in% unlist(gois)) -> average_expression
+cat("\nAdding gene annotation...\n")
+# NOTE: again slim_model[[1]]$annotation is used for annotation, while waiting
+#       for 'Model-level annotation synthesis'...
+merge(slim_model[[1]]$annotation, average_expression,
+      by = "IDs", all.y = TRUE) -> average_expression
+    
+# # Regenerating annotation from scratch may introduce some duplication issue...
+# cat("\nRegenerating gene annotation from scratch...")
+# # Change to `OrgDb_key="ENSEMBLTRANS"` when working at isoform level
+# # NOTE: Possible 1:many mapping in IDs:SYMBOL will results in duplicated IDs and
+# #       (likely) non-GOI genes. Thus, `filter` is used to remove genes not in
+# #       set of GOIs (and non-unique IDs).
+# average_expression |> add_annotation(OrgDb_key="ENSEMBL") |>
+#     filter(SYMBOL %in% unlist(gois)) -> average_expression
 
 # Save full GOI set as CSV
 write.csv(average_expression,
@@ -291,14 +364,14 @@ r4tcpl::savePlots(
 n <- dim(matrix_of_means)[2] - 1
 cat(paste0("\nSaving: ", plot_label, " (", n, "-by-", n, ")"))
 
-# Merge the `average_expression` with the `matrix_of_means`, then sort by
-# decreasing average ICT expression (used as reference)
-# NOTE: set the filter to 0 to plot all the GOIs
+# Set the expression cutoff (set filter to 0 to plot all the GOIs), merge the
+# `average_expression` with the `matrix_of_means`, and sort by decreasing
+# average ICT expression.
 average_expression |>
-  select(c("SYMBOL", "Mean")) |>
-  filter(Mean >= 1) |>
-  merge(matrix_of_means, by = "SYMBOL", all.y = FALSE) |>
-  arrange(desc(Mean)) -> matrix_of_means
+    select(c("SYMBOL", "Mean")) |>
+    filter(Mean >= 1) |>
+    merge(matrix_of_means, by = "SYMBOL", all.y = FALSE) |>
+    arrange(desc(Mean)) -> matrix_of_means
 
 # Convert SYMBOL to a factor to ensure that the x-axis values follow the order
 # of the sorted dataframe instead of being alphabetically ordered
@@ -314,14 +387,16 @@ matrix_of_means |> pivot_longer(cols = !matches("SYMBOL"),
 ct <- "95CI" # chart_type argument
 profile_plots <- list(
   Profile_global = profilePlot(matrix_of_means, ct),
-  Profile_ICs    = profilePlot(matrix_of_means |> filter(SYMBOL %in% ICs), ct),
-  Profile_trans  = profilePlot(matrix_of_means |> filter(!SYMBOL %in% ICs), ct))
+  Profile_pores  = profilePlot(matrix_of_means |> filter(SYMBOL %in% pores), ct),
+  Profile_trans  = profilePlot(matrix_of_means |> filter(SYMBOL %in% trans), ct),
+  Profile_rex    = profilePlot(matrix_of_means |> filter(!SYMBOL %in% c(pores, trans)), ct))
 # ...and save them
 for (name in names(profile_plots)) {
   r4tcpl::savePlots(
     \(){print(profile_plots[[name]])},
     width_px = 1024,
     ratio = 1/sqrt(2), # A4 ratio
+    #ratio = 1/(nrow(profile_plots[[name]]$data)/500 + 1), # empirical relation
     figure_Name = paste0(name, "_", ct),
     figure_Folder = out_dir)
   cat(paste("\nSaving:", name, "-", ct))
@@ -354,7 +429,7 @@ for (file_name in names(subGOIs_list)) {
   # Check for completeness
   if (length(setdiff(subGOIs_list[[file_name]],average_expression$SYMBOL)) > 0) {
     cat("\nWARNING by ", file_label, ":",
-        "\n Missing these gene symbols in GOI main list:\n  ", sep = "")
+        "\n Missing gene symbols in GOI main list:\n  ", sep = "")
     cat(setdiff(subGOIs_list[[file_name]],average_expression$SYMBOL), sep="\n  ")
   }
 }

@@ -49,6 +49,7 @@ Rscript "./src/endo_profiler.R" \
 	"$threshold_adapt" \
 	"$threshold_value" \
 	"$GOIs" \
+	"./data/MTPDB.sqlite" \
 	"${in_path/\/in\//\/out\/}"
 
 # --- The pipeline ends here ---------------------------------------------------

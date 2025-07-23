@@ -1,5 +1,5 @@
 {
-    "GOIs": "./data/in/ICT_set.csv",
+    "GOIs": "./data/in/ICT_set_v2.csv",
     "central_tendency": "mean",
     "threshold_adapt": false,
     "threshold_value": 1
