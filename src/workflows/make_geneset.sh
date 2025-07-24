@@ -12,24 +12,17 @@
 #? - GPCRs/RTKs: 52 receptors of interest (hard-coded in 'make_geneset.R')
 # ==============================================================================
 
-db_filename="MTPDB.sqlite"
-archive_path="./data/in/MTP-DB/${db_filename}.gz"
-db_path="./data/${db_filename}"
+# --- General settings and variables -------------------------------------------
+source ./src/bash_commons.sh
+
+db_path="./data/MTPDB.sqlite"
 out_dir="./data/in"
 
-# Extract the archive
-if [[ ! -f "$db_path" ]]; then
-    if [[ -f "$archive_path" ]]; then
-        printf "Extracting MTP-DB ... "
-        gzip -dc "$archive_path" > "$db_path"
-        printf "Done\n"
-    else
-        printf "\nMTP-DB not found locally!"
-        printf "Run 'kerblam data fetch' to download fresh database.\n"
-    fi
-fi
+# --- Extract the archive ------------------------------------------------------
+_extract_mtpdb "$db_path"
 
-# Make the gene-set
+# --- Make the gene-set --------------------------------------------------------
+printf "Making the geneset...\n"
 Rscript --vanilla "./src/make_geneset.R" \
     "$db_path" \
     "$out_dir"

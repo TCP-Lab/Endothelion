@@ -2,6 +2,7 @@
 /data/out/
 /data/in/Lines/
 /data/in/MTP-DB/
+**/MTPDB.sqlite
 /manuscript/
 
 # Sublime Text project files
