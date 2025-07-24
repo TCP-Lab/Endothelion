@@ -1,6 +1,17 @@
 {
     "GOIs": "./data/in/ICT_set_v2.csv",
-    "central_tendency": "mean",
-    "threshold_adapt": false,
-    "threshold_value": 1
+    "threshold": {
+            "adapt": false,
+            "value": 1
+    },
+    "meta_analysis": {
+        "central_tendency": {
+            "comment": "Options (case insensitive): 'mean', 'median', 'nwmean'",
+            "descriptive": "mean"
+        },
+        "chart": {
+            "comment": "Options (case insensitive): 'boxplot', '95CI', 'points', 'lines'",
+            "type": "boxplot"
+        }
+    }
 }

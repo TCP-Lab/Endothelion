@@ -223,7 +223,7 @@ profilePlot <- function(matrix_of_means, chart_type = "boxplot", thr = 1) {
                 width = 0.2,
                 size = 1,
                 alpha = 0.6)
-    } else if (chart_type == "95CI") {
+    } else if (chart_type == "95ci") {
         master_plot <- master_plot +
             stat_summary(
                 fun.data  = mean_cl_normal,
@@ -270,6 +270,7 @@ profilePlot <- function(matrix_of_means, chart_type = "boxplot", thr = 1) {
               axis.text.y = element_text(size = 10),
               axis.title = element_text(size = 18),
               legend.text = element_text(size = 16),
+              legend.position = "inside",
               legend.position.inside = c(0.8, 0.1)) +
         xlab("Genes of Interest") +
         ylab(substitute(log[2]*(x+1), list(x = "TPM"))) +

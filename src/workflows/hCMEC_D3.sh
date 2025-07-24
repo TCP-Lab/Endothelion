@@ -17,9 +17,10 @@ source ./src/bash_commons.sh
 # Set variables from runtime option JSON file
 OPTS="./data/in/runtime_options.json"
 GOIs="$(cat $OPTS | jq -r ".GOIs")"
-central_tendency="$(cat $OPTS | jq -r ".central_tendency")"
-threshold_adapt="$(cat $OPTS | jq -r ".threshold_adapt")"
-threshold_value="$(cat $OPTS | jq -r ".threshold_value")"
+threshold_adapt="$(cat $OPTS | jq -r ".threshold.adapt")"
+threshold_value="$(cat $OPTS | jq -r ".threshold.value")"
+descriptive="$(cat $OPTS | jq -r ".meta_analysis.central_tendency.descriptive")"
+chart_type="$(cat $OPTS | jq -r ".meta_analysis.chart.type")"
 
 echo -e "\n${mag}STARTING hCMEC/D3 PROFILING${end}"
 echo -e "${mag}===========================${end}"
@@ -45,11 +46,12 @@ Rscript "./src/pca_hc.R" \
 # ICT+ absolute expression profiling in hCMEC-D3 cell line
 Rscript "./src/endo_profiler.R" \
 	"$in_path" \
-	"$central_tendency" \
+	"$descriptive" \
 	"$threshold_adapt" \
 	"$threshold_value" \
 	"$GOIs" \
 	"./data/MTPDB.sqlite" \
+	"$chart_type" \
 	"${in_path/\/in\//\/out\/}"
 
 # --- The pipeline ends here ---------------------------------------------------

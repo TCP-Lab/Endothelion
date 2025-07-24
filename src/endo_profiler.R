@@ -50,12 +50,12 @@ source("./src/endo_functions.R")
 error_msg <- "\nERROR by endo_profiler.R\n"
 
 # Check if the correct number of arguments is provided from command-line
-if (length(commandArgs(trailingOnly = TRUE)) != 7) {
+if (length(commandArgs(trailingOnly = TRUE)) != 8) {
   cat(error_msg,
       "One or more arguments are missing. Usage:\n\n",
-      "Rscript endo_profiler.R <in_path> <central_tendency> \\\n",
+      "Rscript endo_profiler.R <in_path> <descriptive> \\\n",
       "                        <threshold_adapt> <threshold_value> \\\n",
-      "                        <GOIs> <db_path> <out_dir>\n\n")
+      "                        <GOIs> <db_path> <chart_type> <out_dir>\n\n")
   quit(status = 1)
 }
 
@@ -66,7 +66,8 @@ threshold_adapt <- commandArgs(trailingOnly = TRUE)[3]
 threshold_value <- as.numeric(commandArgs(trailingOnly = TRUE)[4])
 gois_file <- commandArgs(trailingOnly = TRUE)[5]
 db_path <- commandArgs(trailingOnly = TRUE)[6]
-out_dir <- commandArgs(trailingOnly = TRUE)[7]
+chart_type <- tolower(commandArgs(trailingOnly = TRUE)[7])
+out_dir <- commandArgs(trailingOnly = TRUE)[8]
 
 # # Interactive debug (from the project root directory)
 # target_dir <- "./data/in/Lines/test_hCMEC_D3/"
@@ -76,6 +77,7 @@ out_dir <- commandArgs(trailingOnly = TRUE)[7]
 # threshold_value <- 1
 # gois_file <- "./data/in/ICT_set_v2.csv"
 # db_path <- "./data/MTPDB.sqlite"
+# chart_type <- "95ci"
 # out_dir <- "./data/out/Lines/test_hCMEC_D3/"
 
 # Check if the target directory exists
@@ -117,11 +119,20 @@ if (! file.exists(gois_file)) {
   quit(status = 6)
 }
 
+# Check chart type
+if (! chart_type %in% c("boxplot", "95ci", "points", "lines")) {
+    cat(error_msg,
+        " Invalid \'chart_type\' parameter \'", chart_type, "\'.\n",
+        " It must be one of the chart types currently implemented in",
+        " Endothelion.\n", sep = "")
+    quit(status = 7)
+}
+
 # Check if the list of the Genes of Interest (GOIs) exists.
 if (! file.exists(db_path)) {
     cat(error_msg,
         " File \'", db_path, "\' does not exist.\n", sep = "")
-    quit(status = 7)
+    quit(status = 8)
 }
 
 # --- xModel Loading -----------------------------------------------------------
@@ -384,12 +395,11 @@ matrix_of_means |> pivot_longer(cols = !matches("SYMBOL"),
                                 values_to = "Mean") -> matrix_of_means
 
 # Make the 'expression fading plots'...
-ct <- "95CI" # chart_type argument
 profile_plots <- list(
-  Profile_global = profilePlot(matrix_of_means, ct),
-  Profile_pores  = profilePlot(matrix_of_means |> filter(SYMBOL %in% pores), ct),
-  Profile_trans  = profilePlot(matrix_of_means |> filter(SYMBOL %in% trans), ct),
-  Profile_rex    = profilePlot(matrix_of_means |> filter(!SYMBOL %in% c(pores, trans)), ct))
+  Profile_global = profilePlot(matrix_of_means, chart_type),
+  Profile_pores  = profilePlot(matrix_of_means |> filter(SYMBOL %in% pores), chart_type),
+  Profile_trans  = profilePlot(matrix_of_means |> filter(SYMBOL %in% trans), chart_type),
+  Profile_rex    = profilePlot(matrix_of_means |> filter(!SYMBOL %in% c(pores, trans)), chart_type))
 # ...and save them
 for (name in names(profile_plots)) {
   r4tcpl::savePlots(
@@ -397,9 +407,9 @@ for (name in names(profile_plots)) {
     width_px = 1024,
     ratio = 1/sqrt(2), # A4 ratio
     #ratio = 1/(nrow(profile_plots[[name]]$data)/500 + 1), # empirical relation
-    figure_Name = paste0(name, "_", ct),
+    figure_Name = paste0(name, "_", chart_type),
     figure_Folder = out_dir)
-  cat(paste("\nSaving:", name, "-", ct))
+  cat(paste("\nSaving:", name, "-", chart_type))
 }
 cat("\n")
 
