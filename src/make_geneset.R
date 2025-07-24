@@ -151,16 +151,21 @@ iSLCs <- dbGetQuery(connection, query_iSLCs)
 # Temporary patch for iSLCs and ICs as retrieved from MTP-DB ver. 1.25.24
 patch <- c(
     paste0("SLC30A", c(1:10)),
-    paste0("SLC4A", c(1:11)),
+    paste0("SLC4A", c(1:5,7:11)),
     "SLC24A1",
+    "XPR1",  # aka SLC53A1 (Phosphate carrier)
+    "MAGT1", # aka SLC58A1 (Magnesium transporter)
+    "TUSC3", # aka SLC58A2 (Magnesium transporter)
     "CATSPERG",
     "CATSPERB",
     "CATSPERD",
     "CATSPERE",
     "CATSPERZ")
 
-# Receptor Of Interest (ROIs)
-ROIs <- c(
+# Receptor of Interest (RoIs)
+# List of RoIs as compiled by G.Scarpellino
+# MAGT1 (aka SLC58A1) was removed because already included in iSLC list.
+RoIs <- c(
     "ADORA1",
     "ADORA2A",
     "ADORA2B",
@@ -202,7 +207,6 @@ ROIs <- c(
     "HRH3",
     "HRH4",
     "IGF1R",
-    "MAGT1",
     "P2RY1",
     "P2RY11",
     "P2RY12",
@@ -217,7 +221,7 @@ ROIs <- c(
 # Extract Gene Symbols, combine, and save
 c(pores$hugo_gene_symbol,
   pumps$hugo_gene_symbol,
-  iSLCs$hugo_gene_symbol, patch, ROIs) |>
+  iSLCs$hugo_gene_symbol, patch, RoIs) |>
     unique() |> na.omit() |>
     write.table(sep = ",",
                 col.names = FALSE,
@@ -227,16 +231,4 @@ c(pores$hugo_gene_symbol,
 
 # Disconnect from the MTP-DB
 dbDisconnect(connection)
-
-# 
-# 
-# c(pores$hugo_gene_symbol, patch) |>
-#     unique() |> na.omit() |>
-#     write.table(sep = ",",
-#                 col.names = FALSE,
-#                 row.names = FALSE,
-#                 quote = FALSE,
-#                 file = "tempo_ICs.csv")
-# 
-
 

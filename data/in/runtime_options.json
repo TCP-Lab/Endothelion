@@ -11,7 +11,7 @@
         },
         "chart": {
             "comment": "Options (case insensitive): 'boxplot', '95CI', 'points', 'lines'",
-            "type": "boxplot"
+            "type": "95CI"
         }
     }
 }
