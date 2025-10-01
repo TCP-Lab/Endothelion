@@ -5,7 +5,7 @@
 #?
 #? This pipeline performs the *Phase I* task of the Endothelion project for the
 #? analysis of ICT+ absolute expression in multiple hCMEC/D3 cell line datasets.
-#? Unlike its first implementation (i.e., `hCMECold.sh`), this new pipeline uses
+#? Unlike the first implementation (i.e., `hCMECold.sh`), this new pipeline uses
 #? *SeqLoader* for the definition of S3 *xSeries* and *xModel* classes in R,
 #? allowing, among other things, direct invocation of a single, simpler, and
 #? more maintainable R script, without the need for additional wrappers.
@@ -43,13 +43,13 @@ if [[ ! -f ./src/pca_hc.R ]]; then
 		https://raw.githubusercontent.com/TCP-Lab/x.FASTQ/main/workers/pca_hc.R
 fi
 echo -e "\n${yel}Expression Boxes, PCA, and HC${end}"
-Rscript "./src/pca_hc.R" \
+Rscript --vanilla "./src/pca_hc.R" \
 	'countmatrix.*\.tsv' \
 	"${in_path/\/in\//\/out\/}" \
 	"$in_path"
 
 # ICT+ absolute expression profiling in hCMEC-D3 cell line
-Rscript "./src/endo_profiler.R" \
+Rscript --vanilla "./src/endo_profiler.R" \
 	"$in_path" \
 	"$descriptive" \
 	"$threshold_adapt" \

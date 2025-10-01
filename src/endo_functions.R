@@ -194,8 +194,9 @@ custom_pairs <- function(data_set, color = "gray15") {
     points(x, y, pch = 19, cex = 1, col = color)
   }
   # Create the plots
+  par(cex.axis = 2)
   pairs(data_set,
-        cex.labels = 6,
+        cex.labels = 4,
         font.labels = 4,
         lower.panel = panel_cor,
         upper.panel = panel_points)

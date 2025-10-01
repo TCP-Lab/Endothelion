@@ -369,6 +369,7 @@ plot_label <- "Correlation_chart"
 r4tcpl::savePlots(
   \(){custom_pairs(matrix_of_means[-1], color = "steelblue4")},
   width_px = 2000,
+  ratio = 1,
   figure_Name = plot_label,
   figure_Folder = out_dir)
 
