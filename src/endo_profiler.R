@@ -209,6 +209,74 @@ model |> map(perSeries_expMatrix) |>
                            "GENENAME",
                            "GENETYPE")) -> master_expMatrix
 
+
+master_expMatrix |> sapply(is.numeric) |> which() -> numeric_idx
+
+# ---------------------------------------------------------------- quantile ----
+master_expMatrix |> select(numeric_idx) |>
+  as.matrix() |> {\(x)log2(x+1)}() |>
+  limma::normalizeQuantiles() -> master_expMatrix[,numeric_idx]
+# ------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------- Limma ----
+# # No design since all samples same biological condition
+# master_expMatrix[numeric_idx] |> colnames() |> sub(".*\\.", "", x=_) |>
+#   as.factor() -> batch
+# master_expMatrix |> select(numeric_idx) |> as.matrix() |>
+#   {\(x)log2(x+1)}() |>
+#   limma::removeBatchEffect(batch = batch) -> master_expMatrix[,numeric_idx]
+# ------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------ ComBat ----
+# # ComBat (here biology is same across samples, so no 'mod' to protect)
+# master_expMatrix[numeric_idx] |> colnames() |> sub(".*\\.", "", x=_) |>
+#   as.factor() -> batch
+# master_expMatrix |> select(numeric_idx) |> as.matrix() |>
+#   {\(x)log2(x+1)}() |>
+#   sva::ComBat(batch = batch,
+#          mod = NULL,
+#          par.prior = TRUE) -> master_expMatrix[,numeric_idx]
+# ------------------------------------------------------------------------------
+
+# ------------------------------------------------------------ HouseKeeping ----
+# # ENSG00000174444: RPL4 - ribosomal protein L4
+# # https://pmc.ncbi.nlm.nih.gov/articles/PMC3364980/#ref-list1
+# hk_genes <- c("ENSG00000174444")
+# 
+# master_expMatrix |> filter(IDs %in% hk_genes) |> select(numeric_idx) |>
+#   {\(x)log2(x+1)}() |> apply(2,median) -> hk_med
+# ref <- median(hk_med)
+# scale_factors <- ref / hk_med
+# master_expMatrix[,numeric_idx] |> {\(x)log2(x+1)}() |>
+#   sweep(2, scale_factors, "*") -> master_expMatrix[,numeric_idx]
+# ------------------------------------------------------------------------------
+
+model |> attributes() -> bkp_attribs_m
+model |> lapply(\(x_series) {
+
+  x_series |> attributes() -> bkp_attribs_s
+
+  x_series |> sapply(function(element) {
+
+    if(element |> is_run()) {
+      
+      master_expMatrix[,numeric_idx] |> colnames() |>
+        grep(attr(element, "own_name"), x=_) -> idx
+      
+      element[["genes"]]$counts <- 2^(master_expMatrix[,numeric_idx][,idx]) - 1
+
+      return(element)
+    } else { return(element) }
+  }) -> out_series
+  attributes(out_series) <- bkp_attribs_s
+  return(out_series)
+}) -> model
+
+attributes(model) <- bkp_attribs_m
+
+# check
+# model |> class()
+
 # Save the Master Expression Matrix as CSV
 write.table(master_expMatrix,
             file.path(out_dir,
