@@ -18,7 +18,6 @@ source ./src/bash_commons.sh
 db_path="./data/MTPDB.sqlite"
 _extract_mtpdb "$db_path"
 
-
 # Set variables from runtime option JSON file
 OPTS="./data/in/runtime_options.json"
 GOIs="$(cat $OPTS | jq -r ".GOIs")"

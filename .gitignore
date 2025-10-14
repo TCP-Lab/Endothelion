@@ -1,5 +1,5 @@
 # Local data and manuscript folders
-/data/out/
+/data/out*
 /data/in/Lines/
 /data/in/MTP-DB/
 **/MTPDB.sqlite

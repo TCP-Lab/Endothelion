@@ -190,7 +190,7 @@ RoIs <- c(
     "FGFR3",
     "FGFR4",
     "FLT1",
-    "FLT3",
+    "KDR",
     "FLT4",
     "GABBR1",
     "GABBR2",
