@@ -6,11 +6,16 @@ Large-scale comparison of ICT expression in healthy endothelium.
 - jq (>= 1.7.1)
 - kerblam (>= 1.0.0-rc.1) [optional]
 ### R
+- limma (>= 3.58.1)
+- sva (>= 3.50.0)
 - ggplot2 (>= 3.5.0)
 - Hmisc (>= 5.2-3)
 - tidyr (>= 1.3.1)
 - dplyr (>= 1.1.4)
+- purrr (>= 1.0.2)
 - httr (>= 1.4.7)
+- DBI (>= 1.2.3)
+- RSQLite (>= 2.3.5)
 - AnnotationDbi (>= 1.60.2)
 - org.Hs.eg.db (>= 3.16.0)
 - PCAtools (>= 2.10.0)
