@@ -28,6 +28,7 @@
 library(ggplot2)
 library(r4tcpl)
 library(dplyr, warn.conflicts = FALSE)
+library(purrr, warn.conflicts = FALSE)
 library(tidyr)
 library(DBI)
 library(RSQLite)
@@ -171,6 +172,70 @@ model |> sapply(\(series) {
 echo("\nDetailed report", "yellow")
 model |> sapply(factTable) |> invisible()
 
+
+
+
+
+
+# MAKE THIS A SeqLoader METHOD !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Get the Master Expression Matrix
+perSeries_expMatrix <- function(x_series) {
+  
+  # Store annotation
+  annotation_df <- x_series$annotation
+  
+  # Collect all genes dataframes and names of Runs
+  x_series |> imap(function(x, nm) {
+    if (is_run(x)) {
+      # Rename the expression column to the Run's name (with a Series suffix)
+      new_col_name <- paste(nm, attr(x_series, "own_name"), sep = ".")
+      x$genes |> rename(!!new_col_name := counts)
+    } else {
+      NULL
+    }
+  }) |> compact() -> expression_dfs
+  
+  # Merge all count dataframes together (by IDs)
+  merged_express <- reduce(expression_dfs, left_join, by = "IDs")
+  # Final merge: annotation + all counts
+  merged_df <- left_join(annotation_df, merged_express, by = "IDs")
+  
+  return(merged_df)
+}
+
+model |> map(perSeries_expMatrix) |>
+  reduce(left_join, by = c("IDs",
+                           "SYMBOL",
+                           "GENENAME",
+                           "GENETYPE")) -> master_expMatrix
+
+# Save the Master Expression Matrix as CSV
+write.table(master_expMatrix,
+            file.path(out_dir,
+                      paste0(attr(model,"own_name"),
+                             "_MasterExpressionMatrix.tsv")),
+            sep = "\t", row.names = FALSE)
+
+
+
+
+
+# MAKE THIS A SeqLoader METHOD !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Get per-Series Mean Expression Values
+model |> lapply(geneStats, annot = TRUE) |>
+  lapply(select, IDs, SYMBOL, GENENAME, Mean) |>
+  imap(function(x, nm) {
+    names(x)[names(x) == "Mean"] <- paste(nm, "Mean", sep = ".")
+    return(x)
+  }) |>
+  reduce(left_join, by = c("IDs", "SYMBOL", "GENENAME")) -> perSeries_Means
+
+# Save the per-Series Means as CSV
+write.csv(perSeries_Means,
+          file.path(out_dir,
+                    paste0(attr(model,"own_name"),"_perSeries_MEANs.csv")),
+          row.names = FALSE)
+
 # --- Threshold Computation ----------------------------------------------------
 
 # Compute threshold
@@ -215,6 +280,19 @@ if (duplicated_SYMBOLS > 0) {
     echo("\nSlim model facts", "yellow")
     factTable(slim_model)
 }
+
+
+
+
+
+master_expMatrix |> filter(SYMBOL %in% unlist(gois)) -> master_expMatrix_gois
+
+# Save the Master Expression Matrix as CSV
+write.table(master_expMatrix_gois,
+            file.path(out_dir,
+                      paste0(attr(model,"own_name"),
+                             "_MasterExpressionMatrix_GOIs.tsv")),
+            sep = "\t", row.names = FALSE)
 
 # --- Per-Series Stats ---------------------------------------------------------
 
