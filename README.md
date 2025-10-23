@@ -52,16 +52,16 @@ The resulting list comprises 672 transportome elements selected for their releva
 - _Kerblam!_ workflow: `hCMEC_D3`
 
 ### Included Studies
-| ENA BioProject ID | Study Alias   | Runs | Seq Depth      | Library Layout |
-|:-----------------:|:-------------:|:----:|:--------------:|:--------------:|
-| PRJNA307652       | GSE76528      | 8    | 57.1 M _reads_ | PAIRED         |
-| PRJNA575504       | GSE138309     | 3    | 17.8 M _reads_ | PAIRED         |
-| PRJNA578611       | GSE139133     | 2    | 23.4 M _reads_ | PAIRED         |
-| PRJNA777606       | GSE187565     | 2    | 36.4 M _reads_ | PAIRED         |
-| PRJNA847413       | GSE205739     | 4    | 22.8 M _reads_ | PAIRED         |
-| PRJEB48614        | E-MTAB-11129  | 3    | 45.7 M _reads_ | PAIRED         |
-| PRJNA667281       | --            | 3    | 22.2 M _reads_ | PAIRED         |
-| PRJNA896725       | --            | 5    | 22.8 M _reads_ | PAIRED         |
+| ENA BioProject ID | Study Alias   | Ctrl Runs | Library | Median Read Length | Average Depth | Uniquely Mapped Reads | Platform              | Reference      |
+|:-----------------:|:-------------:|:---------:|:-------:|:------------------:|:-------------:|:---------------------:|:---------------------:|:--------------:|
+| PRJNA307652       | GSE76528      | 8         | PE      | 2 × 51 bp          | 57.1 M        | 78.9 %                | Illumina HiSeq 2000   | PMID: 26973449 |
+| PRJNA575504       | GSE138309     | 3         | PE      | 2 × 78 bp          | 17.8 M        | 91.3 %                | Illumina NextSeq 550  | PMID: 32757312 |
+| PRJNA578611       | GSE139133     | 2         | PE      | 2 × 150 bp         | 23.4 M        | 95.3 %                | Illumina NovaSeq 6000 | PMID: 32985481 |
+| PRJNA777606       | GSE187565     | 2         | PE      | 2 × 150 bp         | 36.4 M        | 94.2 %                | Illumina NovaSeq 6000 | PMID: 40097733 |
+| PRJNA847413       | GSE205739     | 4         | PE      | 2 × 150 bp         | 22.8 M        | 60.2 %                | Illumina NovaSeq 6000 | _NA_           |
+| PRJEB48614        | E-MTAB-11129  | 3         | PE      | 2 × 41 bp          | 45.7 M        | 85.9 %                | Illumina NextSeq 500  | PMID: 35967327 |
+| PRJNA667281       | --            | 3         | PE      | 2 × 150 bp         | 22.2 M        | 96.2 %                | Illumina NovaSeq 6000 | PMID: 33631268 |
+| PRJNA896725       | --            | 5         | PE      | 2 × 150 bp         | 22.8 M        | 94.1 %                | Illumina NovaSeq 6000 | PMID: 38638822 |
 
 ### Excluded Studies
 | ENA BioProject ID | Study Alias   | Reason for Exclusion       |
