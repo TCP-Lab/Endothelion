@@ -28,6 +28,7 @@
 library(ggplot2)
 library(r4tcpl)
 library(dplyr, warn.conflicts = FALSE)
+library(purrr, warn.conflicts = FALSE)
 library(tidyr)
 library(DBI)
 library(RSQLite)
@@ -171,6 +172,138 @@ model |> sapply(\(series) {
 echo("\nDetailed report", "yellow")
 model |> sapply(factTable) |> invisible()
 
+
+
+
+
+
+# MAKE THIS A SeqLoader METHOD !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Get the Master Expression Matrix
+perSeries_expMatrix <- function(x_series) {
+  
+  # Store annotation
+  annotation_df <- x_series$annotation
+  
+  # Collect all genes dataframes and names of Runs
+  x_series |> imap(function(x, nm) {
+    if (is_run(x)) {
+      # Rename the expression column to the Run's name (with a Series suffix)
+      new_col_name <- paste(nm, attr(x_series, "own_name"), sep = ".")
+      x$genes |> rename(!!new_col_name := counts)
+    } else {
+      NULL
+    }
+  }) |> compact() -> expression_dfs
+  
+  # Merge all count dataframes together (by IDs)
+  merged_express <- reduce(expression_dfs, left_join, by = "IDs")
+  # Final merge: annotation + all counts
+  merged_df <- left_join(annotation_df, merged_express, by = "IDs")
+  
+  return(merged_df)
+}
+
+model |> map(perSeries_expMatrix) |>
+  reduce(left_join, by = c("IDs",
+                           "SYMBOL",
+                           "GENENAME",
+                           "GENETYPE")) -> master_expMatrix
+
+
+master_expMatrix |> sapply(is.numeric) |> which() -> numeric_idx
+
+# ---------------------------------------------------------------- quantile ----
+master_expMatrix |> select(numeric_idx) |>
+  as.matrix() |> {\(x)log2(x+1)}() |>
+  limma::normalizeQuantiles() -> master_expMatrix[,numeric_idx]
+# ------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------- Limma ----
+# # No design since all samples same biological condition
+# master_expMatrix[numeric_idx] |> colnames() |> sub(".*\\.", "", x=_) |>
+#   as.factor() -> batch
+# master_expMatrix |> select(numeric_idx) |> as.matrix() |>
+#   {\(x)log2(x+1)}() |>
+#   limma::removeBatchEffect(batch = batch) -> master_expMatrix[,numeric_idx]
+# ------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------ ComBat ----
+# # ComBat (here biology is same across samples, so no 'mod' to protect)
+# master_expMatrix[numeric_idx] |> colnames() |> sub(".*\\.", "", x=_) |>
+#   as.factor() -> batch
+# master_expMatrix |> select(numeric_idx) |> as.matrix() |>
+#   {\(x)log2(x+1)}() |>
+#   sva::ComBat(batch = batch,
+#          mod = NULL,
+#          par.prior = TRUE) -> master_expMatrix[,numeric_idx]
+# ------------------------------------------------------------------------------
+
+# ------------------------------------------------------------ HouseKeeping ----
+# # ENSG00000174444: RPL4 - ribosomal protein L4
+# # https://pmc.ncbi.nlm.nih.gov/articles/PMC3364980/#ref-list1
+# hk_genes <- c("ENSG00000174444")
+# 
+# master_expMatrix |> filter(IDs %in% hk_genes) |> select(numeric_idx) |>
+#   {\(x)log2(x+1)}() |> apply(2,median) -> hk_med
+# ref <- median(hk_med)
+# scale_factors <- ref / hk_med
+# master_expMatrix[,numeric_idx] |> {\(x)log2(x+1)}() |>
+#   sweep(2, scale_factors, "*") -> master_expMatrix[,numeric_idx]
+# ------------------------------------------------------------------------------
+
+model |> attributes() -> bkp_attribs_m
+model |> lapply(\(x_series) {
+
+  x_series |> attributes() -> bkp_attribs_s
+
+  x_series |> sapply(function(element) {
+
+    if(element |> is_run()) {
+      
+      master_expMatrix[,numeric_idx] |> colnames() |>
+        grep(attr(element, "own_name"), x=_) -> idx
+      
+      element[["genes"]]$counts <- 2^(master_expMatrix[,numeric_idx][,idx]) - 1
+
+      return(element)
+    } else { return(element) }
+  }) -> out_series
+  attributes(out_series) <- bkp_attribs_s
+  return(out_series)
+}) -> model
+
+attributes(model) <- bkp_attribs_m
+
+# check
+# model |> class()
+
+# Save the Master Expression Matrix as CSV
+write.table(master_expMatrix,
+            file.path(out_dir,
+                      paste0(attr(model,"own_name"),
+                             "_MasterExpressionMatrix.tsv")),
+            sep = "\t", row.names = FALSE)
+
+
+
+
+
+# MAKE THIS A SeqLoader METHOD !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+# Get per-Series Mean Expression Values
+model |> lapply(geneStats, annot = TRUE) |>
+  lapply(select, IDs, SYMBOL, GENENAME, Mean) |>
+  imap(function(x, nm) {
+    names(x)[names(x) == "Mean"] <- paste(nm, "Mean", sep = ".")
+    return(x)
+  }) |>
+  reduce(left_join, by = c("IDs", "SYMBOL", "GENENAME")) -> perSeries_Means
+
+# Save the per-Series Means as CSV
+write.csv(perSeries_Means,
+          file.path(out_dir,
+                    paste0(attr(model,"own_name"),"_perSeries_MEANs.csv")),
+          row.names = FALSE)
+
 # --- Threshold Computation ----------------------------------------------------
 
 # Compute threshold
@@ -215,6 +348,19 @@ if (duplicated_SYMBOLS > 0) {
     echo("\nSlim model facts", "yellow")
     factTable(slim_model)
 }
+
+
+
+
+
+master_expMatrix |> filter(SYMBOL %in% unlist(gois)) -> master_expMatrix_gois
+
+# Save the Master Expression Matrix as CSV
+write.table(master_expMatrix_gois,
+            file.path(out_dir,
+                      paste0(attr(model,"own_name"),
+                             "_MasterExpressionMatrix_GOIs.tsv")),
+            sep = "\t", row.names = FALSE)
 
 # --- Per-Series Stats ---------------------------------------------------------
 
