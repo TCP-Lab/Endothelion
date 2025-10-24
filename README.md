@@ -1,29 +1,6 @@
 # Endothelion
 Large-scale comparison of ICT expression in healthy endothelium.
 
-## Dependencies
-### Bash
-- jq (>= 1.7.1)
-- kerblam (>= 1.0.0-rc.1) [optional]
-### R
-- limma (>= 3.58.1)
-- sva (>= 3.50.0)
-- ggplot2 (>= 3.5.0)
-- Hmisc (>= 5.2-3)
-- tidyr (>= 1.3.1)
-- dplyr (>= 1.1.4)
-- purrr (>= 1.0.2)
-- httr (>= 1.4.7)
-- DBI (>= 1.2.3)
-- RSQLite (>= 2.3.5)
-- AnnotationDbi (>= 1.60.2)
-- org.Hs.eg.db (>= 3.16.0)
-- PCAtools (>= 2.10.0)
-- r4tcpl (>= 1.5.1)
-### SeqLoader
-- rlang (>= 1.1.3)
-- magrittr (>= 2.0.3)
-
 ## Project Structure
 ___Endothelion___ is a project dedicated to exploring a special subset of the transportome--the ensemble of ion channels, pumps, and solute carriers (SLCs) that control inorganic ion transport and homeostasis--in human healthy endothelium.
 ### Phase I: Absolute Assessment
@@ -36,6 +13,7 @@ Quantitative comparison of RNA-Seq data highlights genes that are enriched or de
 This analysis aims at revealing patterns in transportome composition that may underlie functional differences between endothelial populations.
 
 ## Transportome Analysis
+### Making the Gene Set
 For the purposes of the Endothelion project, the list of GOIs is compiled by querying our Membrane Transport Protein Database ([MTP-DB](https://github.com/TCP-Lab/MTP-DB)).
 This gene set can be recreated on the fly by running the _Kerblam!_ workflow:
 ```bash
@@ -53,10 +31,44 @@ The resulting list comprises 672 transportome elements selected for their releva
 > Gene Symbols are very confusing:
 > - _FLT1_ -_is for_-> VEGFR-1
 > - _FLT2_ -_is for_-> this symbol doesn't exist any more (but it was the old name of FGFR1)
-> - _FLT3_ -_is for_-> CD135 (i.e., the RTK receptor for the cytokine ligand, FLT3L)
+> - _FLT3_ -_is for_-> CD135 (i.e., the RTK receptor for the cytokine Flt3 ligand, _FLT3LG_)
 > - _FLT4_ -_is for_-> VEGFR-3
 > - _KDR_  -_is for_-> VEGFR-2
 
+### Running the Analysis
+The entire analysis workflow is implemented within the [_Kerblam!_](https://www.kerblam.dev/) project management open-source framework [(Visentin _et al._, 2025)](https://f1000research.com/articles/14-88), to ensure full transparency and result reproducibility.
+
+You can retrieve the processed expression tables (i.e., outputs of the x.FASTQ pipeline) for all included studies directly from the corresponding Zenodo repository by:
+```bash
+kerblam data fetch
+```
+You can replicate all the steps of the Endothelion pipeline for transportome profiler in this way:
+```bash
+kerblam run hCMEC_D3
+```
+
+### Dependencies
+#### Bash
+- jq (>= 1.7.1)
+- kerblam (>= 1.0.0-rc.1) [optional]
+#### R
+- limma (>= 3.58.1)
+- sva (>= 3.50.0)
+- ggplot2 (>= 3.5.0)
+- Hmisc (>= 5.2-3)
+- tidyr (>= 1.3.1)
+- dplyr (>= 1.1.4)
+- purrr (>= 1.0.2)
+- httr (>= 1.4.7)
+- DBI (>= 1.2.3)
+- RSQLite (>= 2.3.5)
+- AnnotationDbi (>= 1.60.2)
+- org.Hs.eg.db (>= 3.16.0)
+- PCAtools (>= 2.10.0)
+- r4tcpl (>= 1.5.1)
+### SeqLoader
+- rlang (>= 1.1.3)
+- magrittr (>= 2.0.3)
 
 ## hCMEC/D3 (Blood-Brain Barrier Cell Line)
 ### Query
