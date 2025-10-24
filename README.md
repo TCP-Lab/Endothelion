@@ -48,6 +48,16 @@ The resulting list comprises 672 transportome elements selected for their releva
 - solute carriers (SLCs) specific for inorganic solutes (81 genes),
 - a set of 51 receptors (GPCRs and RTKs) with roles in inorganic ion dynamics.
 
+> [!NOTE]
+> Pay attention to protein vs. gene nomenclature for VEGFRs.
+> Gene Symbols are very confusing:
+> - _FLT1_ -_is for_-> VEGFR-1
+> - _FLT2_ -_is for_-> this symbol doesn't exist any more (but it was the old name of FGFR1)
+> - _FLT3_ -_is for_-> CD135 (i.e., the RTK receptor for the cytokine ligand, FLT3L)
+> - _FLT4_ -_is for_-> VEGFR-3
+> - _KDR_  -_is for_-> VEGFR-2
+
+
 ## hCMEC/D3 (Blood-Brain Barrier Cell Line)
 ### Query
 - DB: [NCBI SRA](https://www.ncbi.nlm.nih.gov/sra)
@@ -57,16 +67,16 @@ The resulting list comprises 672 transportome elements selected for their releva
 - _Kerblam!_ workflow: `hCMEC_D3`
 
 ### Included Studies
-| ENA BioProject ID | Study Alias   | Ctrl Runs | Library | Median Read Length | Average Depth | Uniquely Mapped Reads | Platform              | Reference      |
-|:-----------------:|:-------------:|:---------:|:-------:|:------------------:|:-------------:|:---------------------:|:---------------------:|:--------------:|
-| PRJNA307652       | GSE76528      | 8         | PE      | 2 × 51 bp          | 57.1 M        | 78.9 %                | Illumina HiSeq 2000   | PMID: 26973449 |
-| PRJNA575504       | GSE138309     | 3         | PE      | 2 × 78 bp          | 17.8 M        | 91.3 %                | Illumina NextSeq 550  | PMID: 32757312 |
-| PRJNA578611       | GSE139133     | 2         | PE      | 2 × 150 bp         | 23.4 M        | 95.3 %                | Illumina NovaSeq 6000 | PMID: 32985481 |
-| PRJNA777606       | GSE187565     | 2         | PE      | 2 × 150 bp         | 36.4 M        | 94.2 %                | Illumina NovaSeq 6000 | PMID: 40097733 |
-| PRJNA847413       | GSE205739     | 4         | PE      | 2 × 150 bp         | 22.8 M        | 60.2 %                | Illumina NovaSeq 6000 | _NA_           |
-| PRJEB48614        | E-MTAB-11129  | 3         | PE      | 2 × 41 bp          | 45.7 M        | 85.9 %                | Illumina NextSeq 500  | PMID: 35967327 |
-| PRJNA667281       | --            | 3         | PE      | 2 × 150 bp         | 22.2 M        | 96.2 %                | Illumina NovaSeq 6000 | PMID: 33631268 |
-| PRJNA896725       | --            | 5         | PE      | 2 × 150 bp         | 22.8 M        | 94.1 %                | Illumina NovaSeq 6000 | PMID: 38638822 |
+| ENA BioProject ID | Study Alias | Ctrl Runs | Library | Median Read Length | Average Depth | Uniquely Mapped Reads | Platform | Reference |
+|:-----------------:|:-----------:|:---------:|:-------:|:------------------:|:-------------:|:---------------------:|:--------:|:---------:|
+| [PRJNA307652](https://www.ebi.ac.uk/ena/browser/view/PRJNA307652) | [GSE76528](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE76528)   | 8 | PE | 2 × 51 bp  | 57.1 M | 78.9 % | Illumina HiSeq 2000   | [PMID: 26973449](https://pubmed.ncbi.nlm.nih.gov/26973449/) |
+| [PRJNA575504](https://www.ebi.ac.uk/ena/browser/view/PRJNA575504) | [GSE138309](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE138309) | 3 | PE | 2 × 78 bp  | 22.9 M | 91.3 % | Illumina NextSeq 550  | [PMID: 32757312](https://pubmed.ncbi.nlm.nih.gov/32757312/) |
+| [PRJNA578611](https://www.ebi.ac.uk/ena/browser/view/PRJNA578611) | [GSE139133](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE139133) | 2 | PE | 2 × 150 bp | 24.3 M | 95.3 % | Illumina NovaSeq 6000 | [PMID: 32985481](https://pubmed.ncbi.nlm.nih.gov/32985481/) |
+| [PRJNA777606](https://www.ebi.ac.uk/ena/browser/view/PRJNA777606) | [GSE187565](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE187565) | 2 | PE | 2 × 150 bp | 27.8 M | 94.2 % | Illumina NovaSeq 6000 | [PMID: 40097733](https://pubmed.ncbi.nlm.nih.gov/40097733/) |
+| [PRJNA847413](https://www.ebi.ac.uk/ena/browser/view/PRJNA847413) | [GSE205739](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE205739) | 4 | PE | 2 × 150 bp | 23.3 M | 60.2 % | Illumina NovaSeq 6000 | _NA_ |
+| [PRJEB48614](https://www.ebi.ac.uk/ena/browser/view/PRJEB48614)   | [E-MTAB-11129](https://www.ebi.ac.uk/biostudies/ArrayExpress/studies/E-MTAB-11129?query=E-MTAB-11129) | 3 | PE | 2 × 41 bp | 23.1 M | 85.9 % | Illumina NextSeq 500 | [PMID: 35967327](https://pubmed.ncbi.nlm.nih.gov/35967327/) |
+| [PRJNA667281](https://www.ebi.ac.uk/ena/browser/view/PRJNA667281) | -- | 3 | PE | 2 × 150 bp | 22.1 M | 96.2 % | Illumina NovaSeq 6000 | [PMID: 33631268](https://pubmed.ncbi.nlm.nih.gov/33631268/) |
+| [PRJNA896725](https://www.ebi.ac.uk/ena/browser/view/PRJNA896725) | -- | 5 | PE | 2 × 150 bp | 25.6 M | 94.1 % | Illumina NovaSeq 6000 | [PMID: 38638822](https://pubmed.ncbi.nlm.nih.gov/38638822/) |
 
 ### Excluded Studies
 | ENA BioProject ID | Study Alias   | Reason for Exclusion       |
