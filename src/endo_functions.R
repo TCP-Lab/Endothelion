@@ -43,12 +43,13 @@ threshold <- function(xSeries,
     r4tcpl::savePlots(
       \(){
         # Density curves
-        r4tcpl::count_density(only_counts,
+        r4tcpl::count_density(count_table = only_counts,
                               remove_zeros = TRUE,
                               xlim = c(-1,10),
-                              col = "gray20",
+                              ylim = NULL,
                               titles = c(paste0("Kernel Density Plot\n",
-                                                series_ID), ""))
+                                                series_ID), ""),
+                              col = "gray50")
         # Plot the GMM
         for (i in 1:thr_val) {
           lines(gmm$x, gmm$components[,i], col="dodgerblue")
